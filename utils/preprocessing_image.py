@@ -60,11 +60,11 @@ class Preprocessing_Image:
         export_types = ["png", "jpg", "tiff"]
         for image_type in export_types:
             if image_type == "png":
-                cv2.imwrite(image_name_output + ".png", bands_stack)
+                cv2.imwrite(result_image_path + ".png", bands_stack)
             elif image_type == "jpg":
-                cv2.imwrite(image_name_output + ".jpg", bands_stack)
+                cv2.imwrite(result_image_path + ".jpg", bands_stack)
             elif image_type == "tiff":
-                image_name_output = image_name_output + ".tiff"
+                image_name_output = result_image_path + ".tiff"
                 convert_to_tiff(tiff_image_path, image_name_output, bands_stack)
         return result_image_path
 
@@ -103,7 +103,7 @@ class Preprocessing_Image:
         date_create = str(datetime.datetime.now().date()).replace('-', '_')
         image_name_output = "sharpen_image_" + image_name.split(".")[0] + "_" + format(date_create) + ".jpg"
         result_image_path = LOCAL_RESULT_SHARPEN_IMAGE_PATH + image_name_output
-        cv2.imwrite(image_name_output, result)
+        cv2.imwrite(result_image_path, result)
         return result_image_path
 
     def adjust_gamma(self, src_img_path, gamma=0.5):
@@ -118,7 +118,7 @@ class Preprocessing_Image:
         date_create = str(datetime.datetime.now().date()).replace('-', '_')
         image_name_output = "adjust_image_" + image_name.split(".")[0] + "_" + format(date_create) + ".jpg"
         result_image_path = LOCAL_RESULT_SHARPEN_IMAGE_PATH + image_name_output
-        cv2.imwrite(image_name_output, result)
+        cv2.imwrite(result_image_path, result)
         return result_image_path
 
     def hist_equalize(self, src_img_path, mode="tiles", tileGridSize=(8, 8)):
@@ -141,5 +141,5 @@ class Preprocessing_Image:
         date_create = str(datetime.datetime.now().date()).replace('-', '_')
         image_name_output = "equalize_image_" + image_name.split(".")[0] + "_" + format(date_create) + ".jpg"
         result_image_path = LOCAL_RESULT_SHARPEN_IMAGE_PATH + image_name_output
-        cv2.imwrite(image_name_output, result)
+        cv2.imwrite(result_image_path, result)
         return result_image_path
