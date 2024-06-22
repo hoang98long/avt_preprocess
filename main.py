@@ -1,7 +1,7 @@
 import ftplib
 import os.path
 from utils.config import *
-from utils.preprocessing import Preprocessing_Image
+from utils.preprocessing_image import Preprocessing_Image
 import psycopg2
 import json
 import argparse
