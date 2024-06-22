@@ -4,6 +4,8 @@ from utils.config import *
 from utils.preprocessing_image import Preprocessing_Image
 import psycopg2
 import json
+
+
 # import ast
 
 
@@ -34,6 +36,11 @@ def download_file(ftp, ftp_file_path, local_file_path):
         print(f"FTP error: {e}")
 
 
+def route_to_db(cursor):
+    cursor.execute('SET search_path TO public')
+    cursor.execute("SELECT current_schema()")
+
+
 class Preprocessing:
     def __init__(self):
         pass
@@ -58,17 +65,18 @@ class Preprocessing:
             export_types = ["png", "jpg", "tiff"]
             for export_type in export_types:
                 filename = result_image_name + "." + export_type
-                with open(result_image_path+ "." + export_type, "rb") as file:
+                with open(result_image_path + "." + export_type, "rb") as file:
                     save_dir = ftp_dir + "/" + filename
                     ftp.storbinary(f"STOR {save_dir}", file)
             print("Connection closed")
             cursor = conn.cursor()
+            route_to_db(cursor)
             cursor.execute("UPDATE avt_tasks SET task_stat = 1, task_output = %s WHERE id = %s", (ftp_dir, id,))
         except ftplib.all_errors as e:
             cursor = conn.cursor()
+            route_to_db(cursor)
             cursor.execute("UPDATE avt_tasks SET task_stat = 0 WHERE id = %s", (id,))
             print(f"FTP error: {e}")
-
 
     def sharpen_image(self, conn, id, task_param):
         ORG_input_file = task_param['input_file']
@@ -91,12 +99,13 @@ class Preprocessing:
                 ftp.storbinary(f"STOR {save_dir}", file)
             print("Connection closed")
             cursor = conn.cursor()
+            route_to_db(cursor)
             cursor.execute("UPDATE avt_tasks SET task_stat = 1, task_output = %s WHERE id = %s", (save_dir, id,))
         except ftplib.all_errors as e:
             cursor = conn.cursor()
+            route_to_db(cursor)
             cursor.execute("UPDATE avt_tasks SET task_stat = 0 WHERE id = %s", (id,))
             print(f"FTP error: {e}")
-
 
     def adjust_gamma(self, conn, id, task_param):
         src_img_path = task_param['input_file']
@@ -116,12 +125,13 @@ class Preprocessing:
                 ftp.storbinary(f"STOR {save_dir}", file)
             print("Connection closed")
             cursor = conn.cursor()
+            route_to_db(cursor)
             cursor.execute("UPDATE avt_tasks SET task_stat = 1, task_output = %s WHERE id = %s", (save_dir, id,))
         except ftplib.all_errors as e:
             cursor = conn.cursor()
+            route_to_db(cursor)
             cursor.execute("UPDATE avt_tasks SET task_stat = 0 WHERE id = %s", (id,))
             print(f"FTP error: {e}")
-
 
     def equalize_hist(self, conn, id, task_param):
         src_img_path = task_param['input_file']
@@ -142,9 +152,11 @@ class Preprocessing:
                 ftp.storbinary(f"STOR {save_dir}", file)
             print("Connection closed")
             cursor = conn.cursor()
+            route_to_db(cursor)
             cursor.execute("UPDATE avt_tasks SET task_stat = 1, task_output = %s WHERE id = %s", (save_dir, id,))
         except ftplib.all_errors as e:
             cursor = conn.cursor()
+            route_to_db(cursor)
             cursor.execute("UPDATE avt_tasks SET task_stat = 0 WHERE id = %s", (id,))
             print(f"FTP error: {e}")
 
@@ -172,3 +184,4 @@ class Preprocessing:
             preprocess.adjust_gamma(conn, id, task_param)
         elif algorithm == "equalize":
             preprocess.equalize_hist(conn, id, task_param)
+        cursor.close()
