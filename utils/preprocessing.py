@@ -13,7 +13,7 @@ def normalize_band(band):
     return normalized.astype(np.uint8)
 
 
-class Preprocessing:
+class Preprocessing_Image:
     def __init__(self):
         pass
 

@@ -23,7 +23,7 @@ LOCAL_RESULT_EQUALIZE_IMAGE_PATH = 'images/equalize_image/result/'
 FTP_EQUALIZE_IMAGE_PATH = '/data/tiff-data/output_preprocessing/equalize_image/'
 
 # database
-DB_NAME = 'avt_management'
+DB_NAME = 'avt'
 DB_USER = 'postgres'
 DB_PASSWORD = 'Pl0d9RQYUJCxZPGw6NJUcb8eJ6ZXdNMw'
 DB_HOST = '118.70.57.250'
