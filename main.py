@@ -173,6 +173,6 @@ def process(task_id):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--avt_task_id', help='task id')
-    opt = parser.parse_args()
-    process(opt.task_id)
+    parser.add_argument('--avt_task_id', type=int, required=True, help='task id')
+    args = parser.parse_args()
+    process(args.avt_task_id)
