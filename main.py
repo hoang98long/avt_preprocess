@@ -166,7 +166,7 @@ def process(id):
     cursor.execute("SELECT * FROM avt_tasks WHERE id = %s", (id,))
     result = cursor.fetchone()
     preprocess = Preprocessing()
-    task_param = json.loads(result[3])
+    task_param = json.loads(result[5])
     algorithm = task_param["algorithm"]
     if algorithm == "merge":
         preprocess.merge_channel(conn, id, task_param)
