@@ -159,16 +159,17 @@ def process(task_id):
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM avt_tasks WHERE task_id = %s", (task_id,))
     result = cursor.fetchone()
-    task_param = json.loads(result[3])
-    algorithm = task_param["algorithm"]
-    if algorithm == "merge":
-        merge_channel(conn, task_id, task_param)
-    elif algorithm == "sharpen":
-        sharpen_image(conn, task_id, task_param)
-    elif algorithm == "adjust":
-        adjust_gamma(conn, task_id, task_param)
-    elif algorithm == "equalize":
-        equalize_hist(conn, task_id, task_param)
+    print(result)
+    # task_param = json.loads(result[3])
+    # algorithm = task_param["algorithm"]
+    # if algorithm == "merge":
+    #     merge_channel(conn, task_id, task_param)
+    # elif algorithm == "sharpen":
+    #     sharpen_image(conn, task_id, task_param)
+    # elif algorithm == "adjust":
+    #     adjust_gamma(conn, task_id, task_param)
+    # elif algorithm == "equalize":
+    #     equalize_hist(conn, task_id, task_param)
 
 
 if __name__ == "__main__":
