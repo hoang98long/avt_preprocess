@@ -71,11 +71,11 @@ class Preprocessing:
             print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_tasks SET task_stat = 1, task_output = %s WHERE id = %s", (ftp_dir, id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s WHERE id = %s", (ftp_dir, id,))
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_tasks SET task_stat = 0 WHERE id = %s", (id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
             print(f"FTP error: {e}")
 
     def sharpen_image(self, conn, id, task_param):
@@ -100,11 +100,11 @@ class Preprocessing:
             print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_tasks SET task_stat = 1, task_output = %s WHERE id = %s", (save_dir, id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s WHERE id = %s", (save_dir, id,))
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_tasks SET task_stat = 0 WHERE id = %s", (id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
             print(f"FTP error: {e}")
 
     def adjust_gamma(self, conn, id, task_param):
@@ -126,11 +126,11 @@ class Preprocessing:
             print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_tasks SET task_stat = 1, task_output = %s WHERE id = %s", (save_dir, id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s WHERE id = %s", (save_dir, id,))
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_tasks SET task_stat = 0 WHERE id = %s", (id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
             print(f"FTP error: {e}")
 
     def equalize_hist(self, conn, id, task_param):
@@ -153,11 +153,11 @@ class Preprocessing:
             print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_tasks SET task_stat = 1, task_output = %s WHERE id = %s", (save_dir, id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s WHERE id = %s", (save_dir, id,))
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_tasks SET task_stat = 0 WHERE id = %s", (id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
             print(f"FTP error: {e}")
 
     def process(self, id):
@@ -171,7 +171,7 @@ class Preprocessing:
         cursor = conn.cursor()
         cursor.execute('SET search_path TO public')
         cursor.execute("SELECT current_schema()")
-        cursor.execute("SELECT * FROM avt_tasks WHERE id = %s", (id,))
+        cursor.execute("SELECT * FROM avt_task WHERE id = %s", (id,))
         result = cursor.fetchone()
         preprocess = Preprocessing()
         task_param = json.loads(result[5])
