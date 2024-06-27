@@ -1,2 +1,5 @@
 /.idea
 /utils/__pycache__
+*.jpg
+*.png
+*.tiff
