@@ -63,6 +63,9 @@ class Preprocessing:
             check_and_create_directory(ftp, ftp_dir)
             ftp.cwd(str(ftp_dir))
             export_types = ["png", "jpg", "tiff"]
+            task_output = {
+                "output_dir": ftp_dir
+            }
             for export_type in export_types:
                 filename = result_image_name + "." + export_type
                 with open(result_image_path + "." + export_type, "rb") as file:
@@ -71,7 +74,7 @@ class Preprocessing:
             print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s WHERE id = %s", (ftp_dir, id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s WHERE id = %s", (task_output, id,))
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
@@ -95,12 +98,15 @@ class Preprocessing:
             ftp_dir = FTP_SHARPEN_IMAGE_PATH
             ftp.cwd(str(ftp_dir))
             save_dir = ftp_dir + "/" + result_image_name
+            task_output = {
+                "output_image": save_dir
+            }
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s WHERE id = %s", (save_dir, id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s WHERE id = %s", (task_output, id,))
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
@@ -121,12 +127,15 @@ class Preprocessing:
             ftp_dir = FTP_ADJUST_IMAGE_PATH
             ftp.cwd(str(ftp_dir))
             save_dir = ftp_dir + "/" + result_image_name
+            task_output = {
+                "output_image": save_dir
+            }
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s WHERE id = %s", (save_dir, id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s WHERE id = %s", (task_output, id,))
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
@@ -148,12 +157,15 @@ class Preprocessing:
             ftp_dir = FTP_EQUALIZE_IMAGE_PATH
             ftp.cwd(str(ftp_dir))
             save_dir = ftp_dir + "/" + result_image_name
+            task_output = {
+                "output_image": save_dir
+            }
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s WHERE id = %s", (save_dir, id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s WHERE id = %s", (task_output, id,))
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
