@@ -49,7 +49,7 @@ class Preprocessing:
         input_file = task_param['input_file']
         single_bands = task_param['single_bands']
         # single_bands = ast.literal_eval(single_bands)
-        multi_bands = task_param['multi-bands']
+        multi_bands = task_param['multi_bands']
         # multi_bands = ast.literal_eval(multi_bands)
         try:
             filename = input_file.split("/")[-1]
@@ -63,9 +63,10 @@ class Preprocessing:
             check_and_create_directory(ftp, ftp_dir)
             ftp.cwd(str(ftp_dir))
             export_types = ["png", "jpg", "tiff"]
-            task_output = {
+            task_output = str({
                 "output_dir": ftp_dir
-            }
+            })
+            print(task_output)
             for export_type in export_types:
                 filename = result_image_name + "." + export_type
                 with open(result_image_path + "." + export_type, "rb") as file:
@@ -75,10 +76,12 @@ class Preprocessing:
             cursor = conn.cursor()
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s WHERE id = %s", (task_output, id,))
+            conn.commit()
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
+            conn.commit()
             print(f"FTP error: {e}")
 
     def sharpen_image(self, conn, id, task_param):
@@ -107,10 +110,12 @@ class Preprocessing:
             cursor = conn.cursor()
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s WHERE id = %s", (task_output, id,))
+            conn.commit()
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
+            conn.commit()
             print(f"FTP error: {e}")
 
     def adjust_gamma(self, conn, id, task_param):
@@ -136,10 +141,12 @@ class Preprocessing:
             cursor = conn.cursor()
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s WHERE id = %s", (task_output, id,))
+            conn.commit()
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
+            conn.commit()
             print(f"FTP error: {e}")
 
     def equalize_hist(self, conn, id, task_param):
@@ -166,10 +173,12 @@ class Preprocessing:
             cursor = conn.cursor()
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s WHERE id = %s", (task_output, id,))
+            conn.commit()
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
+            conn.commit()
             print(f"FTP error: {e}")
 
     def process(self, id):
@@ -186,14 +195,14 @@ class Preprocessing:
         cursor.execute("SELECT * FROM avt_task WHERE id = %s", (id,))
         result = cursor.fetchone()
         preprocess = Preprocessing()
-        task_param = json.loads(result[5])
+        task_param = json.loads(result[3])
         algorithm = task_param["algorithm"]
-        if algorithm == "merge":
+        if algorithm == "ket_hop_kenh":
             preprocess.merge_channel(conn, id, task_param)
-        elif algorithm == "sharpen":
+        elif algorithm == "lam_sac_net":
             preprocess.sharpen_image(conn, id, task_param)
-        elif algorithm == "adjust":
+        elif algorithm == "dieu_chinh_anh":
             preprocess.adjust_gamma(conn, id, task_param)
-        elif algorithm == "equalize":
+        elif algorithm == "can_bang_anh":
             preprocess.equalize_hist(conn, id, task_param)
         cursor.close()

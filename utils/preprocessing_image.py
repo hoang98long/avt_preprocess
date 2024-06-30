@@ -121,7 +121,7 @@ class Preprocessing_Image:
         cv2.imwrite(result_image_path, result)
         return result_image_path
 
-    def hist_equalize(self, src_img_path, mode="tiles", tileGridSize=(8, 8)):
+    def hist_equalize(self, src_img_path, mode="tiles", tileGridSize=8):
         """
         hist_equalize colored image
         """
@@ -133,7 +133,7 @@ class Preprocessing_Image:
             ycrcb_img = cv2.equalizeHist(ycrcb_img)
         if mode == "tiles":
             assert type(tileGridSize) is tuple
-            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=tileGridSize)
+            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(tileGridSize, tileGridSize))
             for i in range(ycrcb_img.shape[-1]):
                 ycrcb_img[..., i] = clahe.apply(ycrcb_img[..., i])
         result = cv2.cvtColor(ycrcb_img, cv2.COLOR_YCrCb2BGR)
