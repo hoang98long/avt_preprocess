@@ -101,9 +101,10 @@ class Preprocessing_Image:
         result = cv2.convertScaleAbs(sharp_image, alpha=contrast, beta=brightness)
         image_name = ORG_image_path.split("/")[-1]
         date_create = str(datetime.datetime.now().date()).replace('-', '_')
-        image_name_output = "sharpen_image_" + image_name.split(".")[0] + "_" + format(date_create) + ".jpg"
+        image_name_output = "sharpen_image_" + image_name.split(".")[0] + "_" + format(date_create) + ".tiff"
         result_image_path = LOCAL_RESULT_SHARPEN_IMAGE_PATH + image_name_output
-        cv2.imwrite(result_image_path, result)
+        # cv2.imwrite(result_image_path, result)
+        convert_to_tiff(ORG_image_path, result_image_path, result)
         return result_image_path
 
     def adjust_gamma(self, src_img_path, gamma=0.5):
@@ -116,9 +117,10 @@ class Preprocessing_Image:
         result = cv2.LUT(src_img, lookUpTable)
         image_name = src_img_path.split("/")[-1]
         date_create = str(datetime.datetime.now().date()).replace('-', '_')
-        image_name_output = "adjust_image_" + image_name.split(".")[0] + "_" + format(date_create) + ".jpg"
+        image_name_output = "adjust_image_" + image_name.split(".")[0] + "_" + format(date_create) + ".tiff"
         result_image_path = LOCAL_RESULT_SHARPEN_IMAGE_PATH + image_name_output
-        cv2.imwrite(result_image_path, result)
+        # cv2.imwrite(result_image_path, result)
+        convert_to_tiff(src_img_path, result_image_path, result)
         return result_image_path
 
     def hist_equalize(self, src_img_path, mode="tiles", tileGridSize=8):
@@ -141,5 +143,6 @@ class Preprocessing_Image:
         date_create = str(datetime.datetime.now().date()).replace('-', '_')
         image_name_output = "equalize_image_" + image_name.split(".")[0] + "_" + format(date_create) + ".jpg"
         result_image_path = LOCAL_RESULT_SHARPEN_IMAGE_PATH + image_name_output
-        cv2.imwrite(result_image_path, result)
+        # cv2.imwrite(result_image_path, result)
+        convert_to_tiff(src_img_path, result_image_path, result)
         return result_image_path
