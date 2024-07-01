@@ -134,7 +134,7 @@ class Preprocessing_Image:
         if mode == "global":
             ycrcb_img = cv2.equalizeHist(ycrcb_img)
         if mode == "tiles":
-            assert type(tileGridSize) is tuple
+            assert type(tileGridSize) is int
             clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(tileGridSize, tileGridSize))
             for i in range(ycrcb_img.shape[-1]):
                 ycrcb_img[..., i] = clahe.apply(ycrcb_img[..., i])

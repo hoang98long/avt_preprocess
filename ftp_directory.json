@@ -1,0 +1,6 @@
+{
+    "merge_image_result_directory": "/data/tiff-data/output_preprocessing/merge_image",
+    "sharpen_image_result_directory": "/data/tiff-data/output_preprocessing/sharpen_image",
+    "adjust_image_result_directory": "/data/tiff-data/output_preprocessing/adjust_image",
+    "equalize_image_result_directory": "/data/tiff-data/output_preprocessing/equalize_image"
+}

@@ -5,15 +5,20 @@ from utils.preprocessing_image import Preprocessing_Image
 import psycopg2
 import json
 
-
 # import ast
 
+ftp_directory = json.load(open("ftp_directory.json"))
+FTP_MERGE_IMAGE_PATH = ftp_directory['merge_image_result_directory']
+FTP_SHARPEN_IMAGE_PATH = ftp_directory['sharpen_image_result_directory']
+FTP_ADJUST_IMAGE_PATH = ftp_directory['adjust_image_result_directory']
+FTP_EQUALIZE_IMAGE_PATH = ftp_directory['equalize_image_result_directory']
 
-def connect_ftp():
+
+def connect_ftp(config_data):
     ftp = ftplib.FTP()
-    ftp.connect(FTP_HOST, FTP_PORT)
+    ftp.connect(config_data['ftp']['host'], config_data['ftp']['port'])
     ftp.set_pasv(True)
-    ftp.login(user=FTP_USERNAME, passwd=FTP_PASSWORD)
+    ftp.login(user=config_data['ftp']['user'], passwd=config_data['ftp']['password'])
     return ftp
 
 
@@ -45,7 +50,7 @@ class Preprocessing:
     def __init__(self):
         pass
 
-    def merge_channel(self, conn, id, task_param):
+    def merge_channel(self, conn, id, task_param, ftp):
         input_file = task_param['input_file']
         single_bands = task_param['single_bands']
         # single_bands = ast.literal_eval(single_bands)
@@ -54,7 +59,6 @@ class Preprocessing:
         try:
             filename = input_file.split("/")[-1]
             local_file_path = LOCAL_SRC_MERGE_IMAGE_PATH + filename
-            ftp = connect_ftp()
             download_file(ftp, input_file, local_file_path)
             preprocess_image = Preprocessing_Image()
             result_image_path = preprocess_image.merge_image(local_file_path, single_bands, multi_bands)
@@ -84,7 +88,7 @@ class Preprocessing:
             conn.commit()
             print(f"FTP error: {e}")
 
-    def sharpen_image(self, conn, id, task_param):
+    def sharpen_image(self, conn, id, task_param, ftp):
         ORG_input_file = task_param['input_file']
         PAN_input_file = task_param['input_file_single_band']
         try:
@@ -92,7 +96,6 @@ class Preprocessing:
             local_org_file_path = LOCAL_SRC_SHARPEN_IMAGE_PATH + org_filename
             pan_filename = PAN_input_file.split("/")[-1]
             local_pan_file_path = LOCAL_SRC_SHARPEN_IMAGE_PATH + pan_filename
-            ftp = connect_ftp()
             download_file(ftp, ORG_input_file, local_org_file_path)
             download_file(ftp, PAN_input_file, local_pan_file_path)
             preprocess_image = Preprocessing_Image()
@@ -118,13 +121,12 @@ class Preprocessing:
             conn.commit()
             print(f"FTP error: {e}")
 
-    def adjust_gamma(self, conn, id, task_param):
+    def adjust_gamma(self, conn, id, task_param, ftp):
         src_img_path = task_param['input_file']
         gamma = task_param['gamma']
         try:
             filename = src_img_path.split("/")[-1]
             local_file_path = LOCAL_SRC_ADJUST_IMAGE_PATH + filename
-            ftp = connect_ftp()
             download_file(ftp, src_img_path, local_file_path)
             preprocess_image = Preprocessing_Image()
             result_image_path = preprocess_image.adjust_gamma(local_file_path, gamma)
@@ -149,14 +151,13 @@ class Preprocessing:
             conn.commit()
             print(f"FTP error: {e}")
 
-    def equalize_hist(self, conn, id, task_param):
+    def equalize_hist(self, conn, id, task_param, ftp):
         src_img_path = task_param['input_file']
         mode = task_param['mode']
         tileGridSize = task_param['tileGridSize']
         try:
             filename = src_img_path.split("/")[-1]
             local_file_path = LOCAL_SRC_EQUALIZE_IMAGE_PATH + filename
-            ftp = connect_ftp()
             download_file(ftp, src_img_path, local_file_path)
             preprocess_image = Preprocessing_Image()
             result_image_path = preprocess_image.hist_equalize(local_file_path, mode, tileGridSize)
@@ -181,13 +182,13 @@ class Preprocessing:
             conn.commit()
             print(f"FTP error: {e}")
 
-    def process(self, id):
+    def process(self, id, config_data):
         conn = psycopg2.connect(
-            dbname=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            host=DB_HOST,
-            port=DB_PORT
+            dbname=config_data['database']['database'],
+            user=config_data['database']['user'],
+            password=config_data['database']['password'],
+            host=config_data['database']['host'],
+            port=config_data['database']['port']
         )
         cursor = conn.cursor()
         cursor.execute('SET search_path TO public')
@@ -197,12 +198,13 @@ class Preprocessing:
         preprocess = Preprocessing()
         task_param = json.loads(result[3])
         algorithm = task_param["algorithm"]
+        ftp = connect_ftp(config_data)
         if algorithm == "ket_hop_kenh":
-            preprocess.merge_channel(conn, id, task_param)
+            preprocess.merge_channel(conn, id, task_param, ftp)
         elif algorithm == "lam_sac_net":
-            preprocess.sharpen_image(conn, id, task_param)
+            preprocess.sharpen_image(conn, id, task_param, ftp)
         elif algorithm == "dieu_chinh_anh":
-            preprocess.adjust_gamma(conn, id, task_param)
+            preprocess.adjust_gamma(conn, id, task_param, ftp)
         elif algorithm == "can_bang_anh":
-            preprocess.equalize_hist(conn, id, task_param)
+            preprocess.equalize_hist(conn, id, task_param, ftp)
         cursor.close()
