@@ -101,9 +101,9 @@ class Preprocessing:
             ftp_dir = FTP_SHARPEN_IMAGE_PATH
             ftp.cwd(str(ftp_dir))
             save_dir = ftp_dir + "/" + result_image_name
-            task_output = {
+            task_output = str({
                 "output_image": save_dir
-            }
+            })
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             print("Connection closed")
@@ -132,9 +132,9 @@ class Preprocessing:
             ftp_dir = FTP_ADJUST_IMAGE_PATH
             ftp.cwd(str(ftp_dir))
             save_dir = ftp_dir + "/" + result_image_name
-            task_output = {
+            task_output = str({
                 "output_image": save_dir
-            }
+            })
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             print("Connection closed")
@@ -164,9 +164,9 @@ class Preprocessing:
             ftp_dir = FTP_EQUALIZE_IMAGE_PATH
             ftp.cwd(str(ftp_dir))
             save_dir = ftp_dir + "/" + result_image_name
-            task_output = {
+            task_output = str({
                 "output_image": save_dir
-            }
+            })
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             print("Connection closed")
