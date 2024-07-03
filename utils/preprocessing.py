@@ -4,8 +4,7 @@ from utils.config import *
 from utils.preprocessing_image import Preprocessing_Image
 import psycopg2
 import json
-
-# import ast
+import ast
 
 ftp_directory = json.load(open("ftp_directory.json"))
 FTP_MERGE_IMAGE_PATH = ftp_directory['merge_image_result_directory']
@@ -53,9 +52,9 @@ class Preprocessing:
     def merge_channel(self, conn, id, task_param, ftp):
         input_file = task_param['input_file']
         single_bands = task_param['single_bands']
-        # single_bands = ast.literal_eval(single_bands)
+        single_bands = ast.literal_eval(single_bands)
         multi_bands = task_param['multi_bands']
-        # multi_bands = ast.literal_eval(multi_bands)
+        multi_bands = ast.literal_eval(multi_bands)
         try:
             filename = input_file.split("/")[-1]
             local_file_path = LOCAL_SRC_MERGE_IMAGE_PATH + filename
