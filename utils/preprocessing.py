@@ -192,10 +192,10 @@ class Preprocessing:
         cursor = conn.cursor()
         cursor.execute('SET search_path TO public')
         cursor.execute("SELECT current_schema()")
-        cursor.execute("SELECT * FROM avt_task WHERE id = %s", (id,))
+        cursor.execute("SELECT task_param FROM avt_task WHERE id = %s", (id,))
         result = cursor.fetchone()
         preprocess = Preprocessing()
-        task_param = json.loads(result[3])
+        task_param = json.loads(result[0])
         algorithm = task_param["algorithm"]
         ftp = connect_ftp(config_data)
         if algorithm == "ket_hop_kenh":
