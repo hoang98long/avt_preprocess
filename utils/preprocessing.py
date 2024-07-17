@@ -5,6 +5,7 @@ from utils.preprocessing_image import Preprocessing_Image
 import psycopg2
 import json
 import ast
+from datetime import datetime
 
 ftp_directory = json.load(open("ftp_directory.json"))
 FTP_MERGE_IMAGE_PATH = ftp_directory['merge_image_result_directory']
@@ -45,6 +46,12 @@ def route_to_db(cursor):
     cursor.execute("SELECT current_schema()")
 
 
+def get_time():
+    now = datetime.now()
+    current_datetime = datetime(now.year, now.month, now.day, now.hour, now.minute, now.second, now.microsecond)
+    return current_datetime
+
+
 class Preprocessing:
     def __init__(self):
         pass
@@ -78,7 +85,7 @@ class Preprocessing:
             print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s WHERE id = %s", (task_output, id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s", (task_output, get_time(), id,))
             conn.commit()
         except ftplib.all_errors as e:
             cursor = conn.cursor()
@@ -111,7 +118,7 @@ class Preprocessing:
             print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s WHERE id = %s", (task_output, id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s", (task_output, get_time(), id,))
             conn.commit()
         except ftplib.all_errors as e:
             cursor = conn.cursor()
@@ -141,7 +148,7 @@ class Preprocessing:
             print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s WHERE id = %s", (task_output, id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s", (task_output, get_time(), id,))
             conn.commit()
         except ftplib.all_errors as e:
             cursor = conn.cursor()
@@ -172,7 +179,7 @@ class Preprocessing:
             print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s WHERE id = %s", (task_output, id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s", (task_output, get_time(), id,))
             conn.commit()
         except ftplib.all_errors as e:
             cursor = conn.cursor()
