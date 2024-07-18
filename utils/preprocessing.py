@@ -82,6 +82,8 @@ class Preprocessing:
                 with open(result_image_path + "." + export_type, "rb") as file:
                     save_dir = ftp_dir + "/" + filename
                     ftp.storbinary(f"STOR {save_dir}", file)
+                    ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            ftp.sendcmd(f'SITE CHMOD 775 {ftp_dir}')
             print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
@@ -115,6 +117,7 @@ class Preprocessing:
             })
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
+            ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
             print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
@@ -145,6 +148,7 @@ class Preprocessing:
             })
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
+            ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
             print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
@@ -176,6 +180,7 @@ class Preprocessing:
             })
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
+            ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
             print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)

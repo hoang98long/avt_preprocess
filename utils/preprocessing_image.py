@@ -2,6 +2,7 @@ import numpy as np
 import tifffile as tiff
 import cv2
 import datetime
+from datetime import datetime
 from utils.convert_to_tiff import convert_to_tiff
 from utils.config import *
 
@@ -11,6 +12,13 @@ def normalize_band(band):
     band_min, band_max = band.min(), band.max()
     normalized = (band - band_min) / (band_max - band_min) * 255
     return normalized.astype(np.uint8)
+
+
+def get_time_string():
+    now = datetime.now()
+    current_datetime = (str(now.year) + "_" + str(now.month) + "_" + str(now.day) + "_"
+                        + str(now.hour) + "_" + str(now.minute) + "_" + str(now.second))
+    return current_datetime
 
 
 class Preprocessing_Image:
@@ -53,7 +61,7 @@ class Preprocessing_Image:
                     bands_list.append(np.mean(merge_band, axis=0))
         bands_list_normalize = [normalize_band(band) for band in bands_list]
         bands_stack = np.stack(bands_list_normalize, axis=2)
-        date_create = str(datetime.datetime.now().date()).replace('-', '_')
+        date_create = get_time_string()
         tiff_image_name = tiff_image_path.split("/")[-1]
         image_name_output = tiff_image_name.split(".")[0] + "_" + format(date_create)
         result_image_path = LOCAL_RESULT_MERGE_IMAGE_PATH + image_name_output
@@ -100,7 +108,7 @@ class Preprocessing_Image:
         sharp_image = np.clip(sharp_image, 0, 255).astype(np.uint8)
         result = cv2.convertScaleAbs(sharp_image, alpha=contrast, beta=brightness)
         image_name = ORG_image_path.split("/")[-1]
-        date_create = str(datetime.datetime.now().date()).replace('-', '_')
+        date_create = get_time_string()
         image_name_output = "sharpen_image_" + image_name.split(".")[0] + "_" + format(date_create) + ".tiff"
         result_image_path = LOCAL_RESULT_SHARPEN_IMAGE_PATH + image_name_output
         # cv2.imwrite(result_image_path, result)
@@ -116,7 +124,7 @@ class Preprocessing_Image:
 
         result = cv2.LUT(src_img, lookUpTable)
         image_name = src_img_path.split("/")[-1]
-        date_create = str(datetime.datetime.now().date()).replace('-', '_')
+        date_create = get_time_string()
         image_name_output = "adjust_image_" + image_name.split(".")[0] + "_" + format(date_create) + ".tiff"
         result_image_path = LOCAL_RESULT_SHARPEN_IMAGE_PATH + image_name_output
         # cv2.imwrite(result_image_path, result)
@@ -140,7 +148,7 @@ class Preprocessing_Image:
                 ycrcb_img[..., i] = clahe.apply(ycrcb_img[..., i])
         result = cv2.cvtColor(ycrcb_img, cv2.COLOR_YCrCb2BGR)
         image_name = src_img_path.split("/")[-1]
-        date_create = str(datetime.datetime.now().date()).replace('-', '_')
+        date_create = get_time_string()
         image_name_output = "equalize_image_" + image_name.split(".")[0] + "_" + format(date_create) + ".jpg"
         result_image_path = LOCAL_RESULT_SHARPEN_IMAGE_PATH + image_name_output
         # cv2.imwrite(result_image_path, result)
