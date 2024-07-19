@@ -1,0 +1,8 @@
+{
+    "merge_image_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/ghep_kenh_anh",
+    "sharpen_image_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/lam_sac_net",
+    "adjust_image_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/dieu_chinh_anh",
+    "equalize_image_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/can_bang_anh",
+    "merge_tiffs_result_directory": "/data/RASTER_ARCHIVED/anh_bien_tap/ghep_anh",
+    "crop_tiff_result_directory": "/data/RASTER_ARCHIVED/anh_bien_tap/cat_anh"
+}

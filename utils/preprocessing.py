@@ -65,11 +65,12 @@ class Preprocessing:
         try:
             filename = input_file.split("/")[-1]
             local_file_path = LOCAL_SRC_MERGE_IMAGE_PATH + filename
-            download_file(ftp, input_file, local_file_path)
+            if not os.path.isfile(local_file_path):
+                download_file(ftp, input_file, local_file_path)
             preprocess_image = Preprocessing_Image()
             result_image_path = preprocess_image.merge_image(local_file_path, single_bands, multi_bands)
             result_image_name = result_image_path.split("/")[-1]
-            ftp_dir = os.path.join(FTP_MERGE_IMAGE_PATH, result_image_name.split(".")[0])
+            ftp_dir = FTP_MERGE_IMAGE_PATH + "/" + result_image_name.split(".")[0]
             check_and_create_directory(ftp, ftp_dir)
             ftp.cwd(str(ftp_dir))
             export_types = ["png", "jpg", "tiff"]
@@ -104,8 +105,10 @@ class Preprocessing:
             local_org_file_path = LOCAL_SRC_SHARPEN_IMAGE_PATH + org_filename
             pan_filename = PAN_input_file.split("/")[-1]
             local_pan_file_path = LOCAL_SRC_SHARPEN_IMAGE_PATH + pan_filename
-            download_file(ftp, ORG_input_file, local_org_file_path)
-            download_file(ftp, PAN_input_file, local_pan_file_path)
+            if not os.path.isfile(local_org_file_path):
+                download_file(ftp, ORG_input_file, local_org_file_path)
+            if not os.path.isfile(local_pan_file_path):
+                download_file(ftp, PAN_input_file, local_pan_file_path)
             preprocess_image = Preprocessing_Image()
             result_image_path = preprocess_image.sharpen_image(local_org_file_path, local_pan_file_path)
             result_image_name = result_image_path.split("/")[-1]
@@ -136,7 +139,8 @@ class Preprocessing:
         try:
             filename = src_img_path.split("/")[-1]
             local_file_path = LOCAL_SRC_ADJUST_IMAGE_PATH + filename
-            download_file(ftp, src_img_path, local_file_path)
+            if not os.path.isfile(local_file_path):
+                download_file(ftp, src_img_path, local_file_path)
             preprocess_image = Preprocessing_Image()
             result_image_path = preprocess_image.adjust_gamma(local_file_path, gamma)
             result_image_name = result_image_path.split("/")[-1]
@@ -168,7 +172,8 @@ class Preprocessing:
         try:
             filename = src_img_path.split("/")[-1]
             local_file_path = LOCAL_SRC_EQUALIZE_IMAGE_PATH + filename
-            download_file(ftp, src_img_path, local_file_path)
+            if not os.path.isfile(local_file_path):
+                download_file(ftp, src_img_path, local_file_path)
             preprocess_image = Preprocessing_Image()
             result_image_path = preprocess_image.hist_equalize(local_file_path, mode, tileGridSize)
             result_image_name = result_image_path.split("/")[-1]
