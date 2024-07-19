@@ -74,18 +74,19 @@ class Preprocessing:
             check_and_create_directory(ftp, ftp_dir)
             ftp.cwd(str(ftp_dir))
             export_types = ["png", "jpg", "tiff"]
-            task_output = str({
-                "output_dir": ftp_dir
-            })
-            print(task_output)
+            task_output_arr = []
             for export_type in export_types:
                 filename = result_image_name + "." + export_type
                 with open(result_image_path + "." + export_type, "rb") as file:
                     save_dir = ftp_dir + "/" + filename
+                    task_output_arr.append(save_dir)
                     ftp.storbinary(f"STOR {save_dir}", file)
                     ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
             ftp.sendcmd(f'SITE CHMOD 775 {ftp_dir}')
             print("Connection closed")
+            task_output = str({
+                "output_dir": task_output_arr
+            })
             cursor = conn.cursor()
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s", (task_output, get_time(), id,))
@@ -116,7 +117,7 @@ class Preprocessing:
             ftp.cwd(str(ftp_dir))
             save_dir = ftp_dir + "/" + result_image_name
             task_output = str({
-                "output_image": save_dir
+                "output_image": [save_dir]
             })
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
@@ -148,7 +149,7 @@ class Preprocessing:
             ftp.cwd(str(ftp_dir))
             save_dir = ftp_dir + "/" + result_image_name
             task_output = str({
-                "output_image": save_dir
+                "output_image": [save_dir]
             })
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
@@ -181,7 +182,7 @@ class Preprocessing:
             ftp.cwd(str(ftp_dir))
             save_dir = ftp_dir + "/" + result_image_name
             task_output = str({
-                "output_image": save_dir
+                "output_image": [save_dir]
             })
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
