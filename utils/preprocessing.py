@@ -86,7 +86,7 @@ class Preprocessing:
             print("Connection closed")
             task_output = str({
                 "output_dir": task_output_arr
-            })
+            }).replace("'", "\"")
             cursor = conn.cursor()
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s", (task_output, get_time(), id,))
@@ -118,7 +118,7 @@ class Preprocessing:
             save_dir = ftp_dir + "/" + result_image_name
             task_output = str({
                 "output_image": [save_dir]
-            })
+            }).replace("'", "\"")
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
@@ -150,7 +150,7 @@ class Preprocessing:
             save_dir = ftp_dir + "/" + result_image_name
             task_output = str({
                 "output_image": [save_dir]
-            })
+            }).replace("'", "\"")
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
@@ -183,7 +183,7 @@ class Preprocessing:
             save_dir = ftp_dir + "/" + result_image_name
             task_output = str({
                 "output_image": [save_dir]
-            })
+            }).replace("'", "\"")
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
