@@ -85,7 +85,9 @@ class Preprocessing:
             ftp.sendcmd(f'SITE CHMOD 775 {ftp_dir}')
             print("Connection closed")
             task_output = str({
-                "output_dir": task_output_arr
+                "png_image_output": task_output_arr[0],
+                "jpg_image_output": task_output_arr[1],
+                "tiff_image_output": task_output_arr[2]
             }).replace("'", "\"")
             cursor = conn.cursor()
             route_to_db(cursor)
