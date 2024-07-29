@@ -1,4 +1,6 @@
 import argparse
+import time
+
 from utils.preprocessing import Preprocessing
 import json
 import psycopg2
@@ -34,3 +36,4 @@ if __name__ == "__main__":
             for task_id in list_task:
                 preprocessing = Preprocessing()
                 preprocessing.process(task_id, config_data)
+        time.sleep(5)

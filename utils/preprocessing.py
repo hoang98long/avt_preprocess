@@ -6,6 +6,8 @@ import psycopg2
 import json
 import ast
 from datetime import datetime
+import threading
+import time
 
 ftp_directory = json.load(open("ftp_directory.json"))
 FTP_MERGE_IMAGE_PATH = ftp_directory['merge_image_result_directory']
@@ -44,6 +46,28 @@ def download_file(ftp, ftp_file_path, local_file_path):
 def route_to_db(cursor):
     cursor.execute('SET search_path TO public')
     cursor.execute("SELECT current_schema()")
+
+
+def update_database(id, task_stat_value, conn):
+    cursor = conn.cursor()
+    # Update the task_stat field
+    cursor.execute('UPDATE avt_task SET task_stat = %s WHERE id = %s', (task_stat_value, id))
+    conn.commit()
+    # Select and print the updated row
+    # cursor.execute('SELECT * FROM avt_task WHERE id = %s', (id,))
+    # row = cursor.fetchone()
+    # print(row)
+
+
+def check_and_update(id, task_stat_value_holder, conn, stop_event):
+    start_time = time.time()
+    while not stop_event.is_set():
+        time.sleep(5)
+        if stop_event.is_set():
+            break
+        elapsed_time = time.time() - start_time
+        task_stat_value_holder['value'] = max(2, int(elapsed_time))
+        update_database(id, task_stat_value_holder['value'], conn)
 
 
 def get_time():
@@ -93,12 +117,14 @@ class Preprocessing:
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s", (task_output, get_time(), id,))
             conn.commit()
+            return True
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
             conn.commit()
             print(f"FTP error: {e}")
+            return False
 
     def sharpen_image(self, conn, id, task_param, ftp):
         ORG_input_file = task_param['input_file']
@@ -129,12 +155,14 @@ class Preprocessing:
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s", (task_output, get_time(), id,))
             conn.commit()
+            return True
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
             conn.commit()
             print(f"FTP error: {e}")
+            return False
 
     def adjust_gamma(self, conn, id, task_param, ftp):
         src_img_path = task_param['input_file']
@@ -161,12 +189,14 @@ class Preprocessing:
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s", (task_output, get_time(), id,))
             conn.commit()
+            return True
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
             conn.commit()
             print(f"FTP error: {e}")
+            return False
 
     def equalize_hist(self, conn, id, task_param, ftp):
         src_img_path = task_param['input_file']
@@ -194,12 +224,14 @@ class Preprocessing:
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s", (task_output, get_time(), id,))
             conn.commit()
+            return True
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
             conn.commit()
             print(f"FTP error: {e}")
+            return False
 
     def process(self, id, config_data):
         conn = psycopg2.connect(
@@ -209,21 +241,36 @@ class Preprocessing:
             host=config_data['database']['host'],
             port=config_data['database']['port']
         )
-        cursor = conn.cursor()
-        cursor.execute('SET search_path TO public')
-        cursor.execute("SELECT current_schema()")
-        cursor.execute("SELECT task_param FROM avt_task WHERE id = %s", (id,))
-        result = cursor.fetchone()
-        preprocess = Preprocessing()
-        task_param = json.loads(result[0])
-        algorithm = task_param["algorithm"]
-        ftp = connect_ftp(config_data)
-        if algorithm == "ket_hop_kenh":
-            preprocess.merge_channel(conn, id, task_param, ftp)
-        elif algorithm == "lam_sac_net":
-            preprocess.sharpen_image(conn, id, task_param, ftp)
-        elif algorithm == "dieu_chinh_anh":
-            preprocess.adjust_gamma(conn, id, task_param, ftp)
-        elif algorithm == "can_bang_anh":
-            preprocess.equalize_hist(conn, id, task_param, ftp)
-        cursor.close()
+        task_stat_value_holder = {'value': 2}
+        stop_event = threading.Event()
+        checker_thread = threading.Thread(target=check_and_update, args=(id, task_stat_value_holder, conn, stop_event))
+        checker_thread.start()
+        try:
+            cursor = conn.cursor()
+            cursor.execute('SET search_path TO public')
+            cursor.execute("SELECT current_schema()")
+            cursor.execute("SELECT task_param FROM avt_task WHERE id = %s", (id,))
+            result = cursor.fetchone()
+            preprocess = Preprocessing()
+            task_param = json.loads(result[0])
+            algorithm = task_param["algorithm"]
+            return_flag = False
+            ftp = connect_ftp(config_data)
+            if algorithm == "ket_hop_kenh":
+                return_flag = preprocess.merge_channel(conn, id, task_param, ftp)
+            elif algorithm == "lam_sac_net":
+                return_flag = preprocess.sharpen_image(conn, id, task_param, ftp)
+            elif algorithm == "dieu_chinh_anh":
+                return_flag = preprocess.adjust_gamma(conn, id, task_param, ftp)
+            elif algorithm == "can_bang_anh":
+                return_flag = preprocess.equalize_hist(conn, id, task_param, ftp)
+            cursor.close()
+            if return_flag:
+                task_stat_value_holder['value'] = 1
+            else:
+                task_stat_value_holder['value'] = 0
+        except Exception as e:
+            task_stat_value_holder['value'] = 0
+        stop_event.set()
+        update_database(id, task_stat_value_holder['value'], conn)
+        checker_thread.join()
