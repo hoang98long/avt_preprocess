@@ -12,4 +12,5 @@ CONFIG_FILE=$1
 cd /home/avt/github/avt_preprocess
 # shellcheck disable=SC1090
 source ~/miniconda3/etc/profile.d/conda.sh
-conda run -n avt python main.py --config_file "$CONFIG_FILE"
+conda activate avt
+python main.py --config_file "$CONFIG_FILE"
