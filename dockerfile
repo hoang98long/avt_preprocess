@@ -2,6 +2,8 @@ FROM continuumio/miniconda3
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y libgl1-mesa-glx
+
 COPY . /app/avt_preprocess
 
 RUN conda create --name avt_preprocess python=3.8  # Thay python=3.8 bằng phiên bản Python mà bạn cần
