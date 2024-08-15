@@ -8,9 +8,8 @@ RUN conda create --name avt_preprocess python=3.8  # Thay python=3.8 báº±ng phiÃ
 RUN echo "conda activate avt_preprocess" >> ~/.bashrc
 RUN conda init bash
 
-RUN conda run -n avt_preprocess pip install opencv_python
-RUN conda run -n avt_preprocess pip install psycopg2_binary
-RUN conda run -n avt_preprocess pip install tifffile
+COPY /home/avt/github/avt_preprocess/requirements.txt .
+RUN conda run -n avt_preprocess pip install -r requirements.txt
 RUN conda install -n avt_preprocess -c conda-forge gdal
 RUN conda install -n avt_preprocess -c conda-forge rasterio
 
