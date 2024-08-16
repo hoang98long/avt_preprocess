@@ -1,0 +1,7 @@
+version: '1'
+services:
+  avt_preprocess:
+    build: .
+    volumes:
+      - ../config.json:/app/config.json
+    command: bash -c "source activate avt_preprocess && cd /app/avt_preprocess && python main.py --config_file /app/config.json"
