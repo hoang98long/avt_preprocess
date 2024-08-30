@@ -8,12 +8,16 @@ import ast
 from datetime import datetime
 import threading
 import time
+import rasterio
+from rasterio.warp import calculate_default_transform, reproject, Resampling
 
 ftp_directory = json.load(open("ftp_directory.json"))
+FTP_PREPROCESS_IMAGE_PATH = ftp_directory['preprocess_image_result_directory']
 FTP_MERGE_IMAGE_PATH = ftp_directory['merge_image_result_directory']
 FTP_SHARPEN_IMAGE_PATH = ftp_directory['sharpen_image_result_directory']
 FTP_ADJUST_IMAGE_PATH = ftp_directory['adjust_image_result_directory']
 FTP_EQUALIZE_IMAGE_PATH = ftp_directory['equalize_image_result_directory']
+FTP_ILLUM_CORRECT_IMAGE_PATH = ftp_directory['illum_correct_result_directory']
 
 
 def connect_ftp(config_data):
@@ -70,15 +74,124 @@ def check_and_update(id, task_stat_value_holder, conn, stop_event):
         update_database(id, task_stat_value_holder['value'], conn)
 
 
+def check_epsg_code(tiff_path):
+    with rasterio.open(tiff_path) as src:
+        crs = src.crs
+        if crs:
+            epsg_code = int(crs.to_epsg())
+            return epsg_code
+        else:
+            return 0
+
+
+def convert_epsg_4326(input_tiff_path, output_tiff_path, dst_crs='EPSG:4326'):
+    with rasterio.open(input_tiff_path) as src:
+        src_profile = src.profile
+
+        transform, width, height = calculate_default_transform(
+            src.crs, dst_crs, src.width, src.height, *src.bounds)
+
+        dst_profile = src_profile.copy()
+        dst_profile.update({
+            'crs': dst_crs,
+            'transform': transform,
+            'width': width,
+            'height': height
+        })
+        with rasterio.open(output_tiff_path, 'w', **dst_profile) as dst:
+            for i in range(1, src.count + 1):
+                reproject(
+                    source=rasterio.band(src, i),
+                    destination=rasterio.band(dst, i),
+                    src_transform=src.transform,
+                    src_crs=src.crs,
+                    dst_transform=transform,
+                    dst_crs=dst_crs,
+                    resampling=Resampling.nearest)
+
+
 def get_time():
     now = datetime.now()
     current_datetime = datetime(now.year, now.month, now.day, now.hour, now.minute, now.second, now.microsecond)
     return current_datetime
 
 
+def get_time_string():
+    now = datetime.now()
+    current_datetime = (str(now.year) + "_" + str(now.month) + "_" + str(now.day) + "_"
+                        + str(now.hour) + "_" + str(now.minute) + "_" + str(now.second))
+    return current_datetime
+
+
 class Preprocessing:
     def __init__(self):
         pass
+
+    def preprocess_image(self, conn, id, task_param, ftp):
+        input_file = task_param['input_file']
+        input_file_ir = task_param['input_file_ir']
+        try:
+            filename = input_file.split("/")[-1]
+            local_file_path = os.path.join(LOCAL_SRC_PREPROCESS_IMAGE_PATH, filename)
+            if not os.path.isfile(local_file_path):
+                download_file(ftp, input_file, local_file_path)
+            epsg_code = check_epsg_code(local_file_path)
+            if epsg_code == 0:
+                cursor = conn.cursor()
+                route_to_db(cursor)
+                cursor.execute("UPDATE avt_task SET task_stat = 0 AND task_message = 'EPSG ERROR' WHERE id = %s", (id,))
+                conn.commit()
+                return False
+            elif epsg_code != 4326:
+                converted_input_files_local = local_file_path.split(".")[0] + "_4326.tiff"
+                convert_epsg_4326(local_file_path, converted_input_files_local)
+                local_file_path = converted_input_files_local
+            date_create = get_time_string()
+            output_image_name = "result_preprocess_" + format(date_create) + ".tiff"
+            output_path = os.path.join(LOCAL_RESULT_PREPROCESS_IMAGE_PATH, output_image_name)
+            preprocess_image = Preprocessing_Image()
+            if input_file_ir is None:
+                channel_check = preprocess_image.preprocess_no_ir(local_file_path, output_path)
+                if not channel_check:
+                    cursor = conn.cursor()
+                    route_to_db(cursor)
+                    cursor.execute(
+                        "UPDATE avt_task SET task_stat = 0 AND task_message = 'Can them anh IR' WHERE id = %s", (id,))
+                    conn.commit()
+                    return False
+                else:
+                    cursor = conn.cursor()
+                    route_to_db(cursor)
+                    cursor.execute(
+                        "UPDATE avt_task SET task_stat = 0 AND task_message = 'Anh du kenh pho' WHERE id = %s",
+                        (id,))
+                    conn.commit()
+                    return True
+            else:
+                preprocess_image.preprocess_ir(local_file_path, input_file_ir, output_path)
+                ftp_dir = FTP_PREPROCESS_IMAGE_PATH
+                ftp.cwd(str(ftp_dir))
+                save_dir = ftp_dir + "/" + output_image_name
+                task_output = str({
+                    "output_image": [save_dir]
+                }).replace("'", "\"")
+                with open(output_path, "rb") as file:
+                    ftp.storbinary(f"STOR {save_dir}", file)
+                ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+                print("Connection closed")
+                cursor = conn.cursor()
+                route_to_db(cursor)
+                cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
+                               (task_output, get_time(), id,))
+                conn.commit()
+                return True
+        except ftplib.all_errors as e:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
+            conn.commit()
+            print(f"FTP error: {e}")
+            return False
 
     def merge_channel(self, conn, id, task_param, ftp):
         input_file = task_param['input_file']
@@ -115,7 +228,8 @@ class Preprocessing:
             }).replace("'", "\"")
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s", (task_output, get_time(), id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
+                           (task_output, get_time(), id,))
             conn.commit()
             return True
         except ftplib.all_errors as e:
@@ -153,7 +267,8 @@ class Preprocessing:
             print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s", (task_output, get_time(), id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
+                           (task_output, get_time(), id,))
             conn.commit()
             return True
         except ftplib.all_errors as e:
@@ -187,7 +302,8 @@ class Preprocessing:
             print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s", (task_output, get_time(), id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
+                           (task_output, get_time(), id,))
             conn.commit()
             return True
         except ftplib.all_errors as e:
@@ -222,7 +338,56 @@ class Preprocessing:
             print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s", (task_output, get_time(), id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
+                           (task_output, get_time(), id,))
+            conn.commit()
+            return True
+        except ftplib.all_errors as e:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
+            conn.commit()
+            print(f"FTP error: {e}")
+            return False
+
+    def illumination_correct(self, conn, id, task_param, ftp):
+        input_file = task_param['input_file']
+        try:
+            filename = input_file.split("/")[-1]
+            local_file_path = os.path.join(LOCAL_SRC_ILLUM_CORRECT_IMAGE_PATH, filename)
+            if not os.path.isfile(local_file_path):
+                download_file(ftp, input_file, local_file_path)
+            epsg_code = check_epsg_code(local_file_path)
+            if epsg_code == 0:
+                cursor = conn.cursor()
+                route_to_db(cursor)
+                cursor.execute("UPDATE avt_task SET task_stat = 0 AND task_message = 'EPSG ERROR' WHERE id = %s", (id,))
+                conn.commit()
+                return False
+            elif epsg_code != 4326:
+                converted_input_files_local = local_file_path.split(".")[0] + "_4326.tiff"
+                convert_epsg_4326(local_file_path, converted_input_files_local)
+                local_file_path = converted_input_files_local
+            date_create = get_time_string()
+            output_image_name = "result_illum_correct_" + format(date_create) + ".tiff"
+            output_path = os.path.join(LOCAL_RESULT_ILLUM_CORRECT_IMAGE_PATH, output_image_name)
+            preprocess_image = Preprocessing_Image()
+            preprocess_image.illumination_correct(local_file_path, output_path)
+            result_image_name = output_path.split("/")[-1]
+            ftp_dir = FTP_ILLUM_CORRECT_IMAGE_PATH
+            ftp.cwd(str(ftp_dir))
+            save_dir = ftp_dir + "/" + result_image_name
+            task_output = str({
+                "output_image": [save_dir]
+            }).replace("'", "\"")
+            with open(output_path, "rb") as file:
+                ftp.storbinary(f"STOR {save_dir}", file)
+            ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            print("Connection closed")
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
+                           (task_output, get_time(), id,))
             conn.commit()
             return True
         except ftplib.all_errors as e:
@@ -258,12 +423,16 @@ class Preprocessing:
             ftp = connect_ftp(config_data)
             if algorithm == "ket_hop_kenh":
                 return_flag = preprocess.merge_channel(conn, id, task_param, ftp)
+            elif algorithm == "tien_xu_ly":
+                return_flag = preprocess.preprocess_image(conn, id, task_param, ftp)
             elif algorithm == "lam_sac_net":
                 return_flag = preprocess.sharpen_image(conn, id, task_param, ftp)
             elif algorithm == "dieu_chinh_anh":
                 return_flag = preprocess.adjust_gamma(conn, id, task_param, ftp)
             elif algorithm == "can_bang_anh":
                 return_flag = preprocess.equalize_hist(conn, id, task_param, ftp)
+            elif algorithm == "hieu_chinh_sang":
+                return_flag = preprocess.illumination_correct(conn, id, task_param, ftp)
             cursor.close()
             if return_flag:
                 task_stat_value_holder['value'] = 1

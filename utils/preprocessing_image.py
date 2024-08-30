@@ -5,6 +5,7 @@ import datetime
 from datetime import datetime
 from utils.convert_to_tiff import convert_to_tiff
 from utils.config import *
+import rasterio
 
 
 def normalize_band(band):
@@ -24,6 +25,91 @@ def get_time_string():
 class Preprocessing_Image:
     def __init__(self):
         pass
+
+    def preprocess_no_ir(self, tiff_image_path, output_path):
+        with rasterio.open(tiff_image_path) as src:
+            # Read the channels
+            channels = [src.read(i + 1) for i in range(src.count)]
+            print(len(channels))
+
+            # Check if there are 4 channels (including IR)
+            ir_channel = channels[-1]
+            rgb_channels = channels[:-1]
+
+            # Detect if there are identical channels
+            for i in range(len(channels)):
+                for j in range(i + 1, len(channels)):
+                    if np.array_equal(channels[i], channels[j]):
+                        return False
+
+            # Combine channels into a 4-channel array (RGB first, IR last)
+            combined_image = np.stack(rgb_channels + [ir_channel])
+
+            # Write the combined image to a new TIFF file
+            with rasterio.open(
+                    output_path, 'w',
+                    driver='GTiff',
+                    height=combined_image.shape[1],
+                    width=combined_image.shape[2],
+                    count=4,  # 4 channels
+                    dtype=combined_image.dtype
+            ) as dst:
+                for i in range(4):
+                    dst.write(combined_image[i], i + 1)
+
+        return True
+
+    def preprocess_ir(self, tiff_image_path, tiff_image_ir_path, output_path):
+        check_channel = False
+        with rasterio.open(tiff_image_path) as src:
+            # Read the channels
+            channels = [src.read(i + 1) for i in range(src.count)]
+            if len(channels) == 3:
+                check_channel = True
+        if not check_channel:
+            with rasterio.open(tiff_image_path) as src_4ch:
+                rgb_channels = src_4ch.read([1, 2, 3])  # Read the first 3 channels (RGB)
+
+            # Open the IR image
+            with rasterio.open(tiff_image_ir_path) as src_ir:
+                ir_channel = src_ir.read(1)  # Assuming IR image has a single channel
+
+            # Stack the RGB channels and the IR channel to create a 4-channel image
+            combined_image = np.vstack((rgb_channels, np.expand_dims(ir_channel, axis=0)))
+
+            # Write the combined image to a new 4-channel TIFF file
+            with rasterio.open(
+                    output_path, 'w',
+                    driver='GTiff',
+                    height=combined_image.shape[1],
+                    width=combined_image.shape[2],
+                    count=4,  # 4 channels
+                    dtype=combined_image.dtype
+            ) as dst:
+                for i in range(4):
+                    dst.write(combined_image[i], i + 1)
+        else:
+            with rasterio.open(tiff_image_path) as src_rgb:
+                rgb_channels = src_rgb.read()
+
+            # Open the IR image
+            with rasterio.open(tiff_image_ir_path) as src_ir:
+                ir_channel = src_ir.read(1)  # Assuming IR image has a single channel
+
+            # Stack the RGB channels and the IR channel to create a 4-channel image
+            combined_image = np.vstack((rgb_channels, np.expand_dims(ir_channel, axis=0)))
+
+            # Write the combined image to a new 4-channel TIFF file
+            with rasterio.open(
+                    output_path, 'w',
+                    driver='GTiff',
+                    height=combined_image.shape[1],
+                    width=combined_image.shape[2],
+                    count=4,  # 4 channels
+                    dtype=combined_image.dtype
+            ) as dst:
+                for i in range(4):
+                    dst.write(combined_image[i], i + 1)
 
     def merge_image(self, tiff_image_path, single_bands, multi_bands):
         """
@@ -154,3 +240,29 @@ class Preprocessing_Image:
         # cv2.imwrite(result_image_path, result)
         convert_to_tiff(src_img_path, result_image_path, result)
         return result_image_path
+
+    def illumination_correct(self, input_image_path, output_image_path):
+        # Mở ảnh TIFF bằng rasterio
+        with rasterio.open(input_image_path) as src:
+            image = src.read()
+            profile = src.profile
+
+        bands, rows, cols = image.shape
+        num_bands = 60  # Số lượng dải quét ngang
+        band_height = rows // num_bands
+
+        mean_brightness_per_band = []
+        for i in range(num_bands):
+            band_section = image[:, i * band_height:(i + 1) * band_height, :]
+            mean_brightness = np.mean(band_section)
+            mean_brightness_per_band.append(mean_brightness)
+
+        corrected_image = np.copy(image)
+        for i in range(num_bands):
+            band_section = corrected_image[:, i * band_height:(i + 1) * band_height, :]
+            correction_factor = np.mean(mean_brightness_per_band) / mean_brightness_per_band[i]
+            corrected_image[:, i * band_height:(i + 1) * band_height, :] = np.clip(band_section * correction_factor, 0,
+                                                                                   255)
+
+        with rasterio.open(output_image_path, 'w', **profile) as dst:
+            dst.write(corrected_image)
