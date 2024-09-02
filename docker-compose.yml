@@ -6,3 +6,4 @@ services:
       - ../config.json:/app/config.json
       - .:/app/avt_preprocess
     command: bash -c "source activate avt_preprocess && cd /app/avt_preprocess && python main.py --config_file /app/config.json"
+    restart: unless-stopped

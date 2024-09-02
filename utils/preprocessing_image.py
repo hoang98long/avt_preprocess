@@ -242,13 +242,12 @@ class Preprocessing_Image:
         return result_image_path
 
     def illumination_correct(self, input_image_path, output_image_path):
-        # Mở ảnh TIFF bằng rasterio
         with rasterio.open(input_image_path) as src:
             image = src.read()
             profile = src.profile
 
         bands, rows, cols = image.shape
-        num_bands = 60  # Số lượng dải quét ngang
+        num_bands = 50
         band_height = rows // num_bands
 
         mean_brightness_per_band = []
