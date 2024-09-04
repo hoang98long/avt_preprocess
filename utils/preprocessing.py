@@ -14,6 +14,7 @@ from rasterio.warp import calculate_default_transform, reproject, Resampling
 ftp_directory = json.load(open("ftp_directory.json"))
 FTP_PREPROCESS_IMAGE_PATH = ftp_directory['preprocess_image_result_directory']
 FTP_MERGE_IMAGE_PATH = ftp_directory['merge_image_result_directory']
+FTP_FORMAT_CONVERT_PATH = ftp_directory['format_convert_result_directory']
 FTP_SHARPEN_IMAGE_PATH = ftp_directory['sharpen_image_result_directory']
 FTP_ADJUST_IMAGE_PATH = ftp_directory['adjust_image_result_directory']
 FTP_EQUALIZE_IMAGE_PATH = ftp_directory['equalize_image_result_directory']
@@ -35,16 +36,18 @@ def check_and_create_directory(ftp, directory):
         if str(e).startswith('550'):
             ftp.mkd(directory)
         else:
-            print(f"Error changing to directory '{directory}': {e}")
+            pass
+            # print(f"Error changing to directory '{directory}': {e}")
 
 
 def download_file(ftp, ftp_file_path, local_file_path):
     try:
         with open(local_file_path, 'wb') as file:
             ftp.retrbinary(f"RETR {ftp_file_path}", file.write)
-        print(f"Downloaded '{ftp_file_path}' to '{local_file_path}'")
+        # print(f"Downloaded '{ftp_file_path}' to '{local_file_path}'")
     except ftplib.all_errors as e:
-        print(f"FTP error: {e}")
+        pass
+        # print(f"FTP error: {e}")
 
 
 def route_to_db(cursor):
@@ -178,7 +181,7 @@ class Preprocessing:
                 with open(output_path, "rb") as file:
                     ftp.storbinary(f"STOR {save_dir}", file)
                 ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
-                print("Connection closed")
+                # print("Connection closed")
                 cursor = conn.cursor()
                 route_to_db(cursor)
                 cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
@@ -190,7 +193,7 @@ class Preprocessing:
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
             conn.commit()
-            print(f"FTP error: {e}")
+            # print(f"FTP error: {e}")
             return False
 
     def merge_channel(self, conn, id, task_param, ftp):
@@ -220,7 +223,7 @@ class Preprocessing:
                     ftp.storbinary(f"STOR {save_dir}", file)
                     ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
             ftp.sendcmd(f'SITE CHMOD 775 {ftp_dir}')
-            print("Connection closed")
+            # print("Connection closed")
             task_output = str({
                 "png_image_output": task_output_arr[0],
                 "jpg_image_output": task_output_arr[1],
@@ -237,8 +240,51 @@ class Preprocessing:
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
             conn.commit()
-            print(f"FTP error: {e}")
+            # print(f"FTP error: {e}")
             return False
+
+    def image_format_convert(self, conn, id, task_param, ftp):
+        input_file = task_param['input_file']
+        try:
+            filename = input_file.split("/")[-1]
+            local_file_path = LOCAL_SRC_FORMAT_CONVERT_PATH + filename
+            if not os.path.isfile(local_file_path):
+                download_file(ftp, input_file, local_file_path)
+            preprocess_image = Preprocessing_Image()
+            result_image_path = preprocess_image.format_convert(local_file_path)
+            result_image_name = result_image_path.split("/")[-1]
+            ftp_dir = FTP_FORMAT_CONVERT_PATH + "/" + result_image_name.split(".")[0]
+            check_and_create_directory(ftp, ftp_dir)
+            ftp.cwd(str(ftp_dir))
+            export_types = ["png", "jpg"]
+            task_output_arr = []
+            for export_type in export_types:
+                filename = result_image_name + "." + export_type
+                with open(result_image_path + "." + export_type, "rb") as file:
+                    save_dir = ftp_dir + "/" + filename
+                    task_output_arr.append(save_dir)
+                    ftp.storbinary(f"STOR {save_dir}", file)
+                    ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            ftp.sendcmd(f'SITE CHMOD 775 {ftp_dir}')
+            # print("Connection closed")
+            task_output = str({
+                "png_image_output": task_output_arr[0],
+                "jpg_image_output": task_output_arr[1],
+            }).replace("'", "\"")
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
+                           (task_output, get_time(), id,))
+            conn.commit()
+            return True
+        except ftplib.all_errors as e:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
+            conn.commit()
+            # print(f"FTP error: {e}")
+            return False
+
 
     def sharpen_image(self, conn, id, task_param, ftp):
         ORG_input_file = task_param['input_file']
@@ -264,7 +310,7 @@ class Preprocessing:
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
-            print("Connection closed")
+            # print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
@@ -276,7 +322,7 @@ class Preprocessing:
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
             conn.commit()
-            print(f"FTP error: {e}")
+            # print(f"FTP error: {e}")
             return False
 
     def adjust_gamma(self, conn, id, task_param, ftp):
@@ -299,7 +345,7 @@ class Preprocessing:
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
-            print("Connection closed")
+            # print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
@@ -311,7 +357,7 @@ class Preprocessing:
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
             conn.commit()
-            print(f"FTP error: {e}")
+            # print(f"FTP error: {e}")
             return False
 
     def equalize_hist(self, conn, id, task_param, ftp):
@@ -335,7 +381,7 @@ class Preprocessing:
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
-            print("Connection closed")
+            # print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
@@ -347,7 +393,7 @@ class Preprocessing:
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
             conn.commit()
-            print(f"FTP error: {e}")
+            # print(f"FTP error: {e}")
             return False
 
     def illumination_correct(self, conn, id, task_param, ftp):
@@ -383,7 +429,7 @@ class Preprocessing:
             with open(output_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
-            print("Connection closed")
+            # print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
@@ -395,7 +441,7 @@ class Preprocessing:
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
             conn.commit()
-            print(f"FTP error: {e}")
+            # print(f"FTP error: {e}")
             return False
 
     def process(self, id, config_data):

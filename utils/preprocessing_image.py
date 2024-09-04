@@ -130,7 +130,7 @@ class Preprocessing_Image:
         input_image = tiff.imread(tiff_image_path)
         bands_list = []
         if len(single_bands) == 0 and len(multi_bands) == 0:  # set default value
-            single_bands = [0, 3, 4]
+            single_bands = [0, 1, 2]
         if len(single_bands) > 0:
             for s_band in single_bands:
                 bands_list.append(input_image[s_band, :, :])
@@ -265,3 +265,17 @@ class Preprocessing_Image:
 
         with rasterio.open(output_image_path, 'w', **profile) as dst:
             dst.write(corrected_image)
+
+    def format_convert(self, tiff_image_path):
+        input_image = cv2.imread(tiff_image_path)
+        date_create = get_time_string()
+        tiff_image_name = tiff_image_path.split("/")[-1]
+        image_name_output = tiff_image_name.split(".")[0] + "_" + format(date_create)
+        result_image_path = LOCAL_RESULT_FORMAT_CONVERT_PATH + "/" + image_name_output
+        export_types = ["png", "jpg"]
+        for image_type in export_types:
+            if image_type == "png":
+                cv2.imwrite(result_image_path + ".png", input_image)
+            elif image_type == "jpg":
+                cv2.imwrite(result_image_path + ".jpg", input_image)
+        return result_image_path

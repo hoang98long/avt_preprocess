@@ -16,6 +16,9 @@ LOCAL_RESULT_PREPROCESS_IMAGE_PATH = 'images/preprocess_image/result/'
 LOCAL_SRC_MERGE_IMAGE_PATH = 'images/merge_image/source/'
 LOCAL_RESULT_MERGE_IMAGE_PATH = 'images/merge_image/result/'
 
+LOCAL_SRC_FORMAT_CONVERT_PATH = 'images/format_convert/source/'
+LOCAL_RESULT_FORMAT_CONVERT_PATH = 'images/format_convert/result/'
+
 LOCAL_SRC_SHARPEN_IMAGE_PATH = 'images/sharpen_image/source/'
 LOCAL_RESULT_SHARPEN_IMAGE_PATH = 'images/sharpen_image/result/'
 
