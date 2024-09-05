@@ -241,27 +241,28 @@ class Preprocessing_Image:
         convert_to_tiff(src_img_path, result_image_path, result)
         return result_image_path
 
-    def illumination_correct(self, input_image_path, output_image_path):
+    def illumination_correct(self, input_image_path, output_image_path, num_bands=60):
         with rasterio.open(input_image_path) as src:
             image = src.read()
             profile = src.profile
 
         bands, rows, cols = image.shape
-        num_bands = 50
         band_height = rows // num_bands
 
-        mean_brightness_per_band = []
-        for i in range(num_bands):
-            band_section = image[:, i * band_height:(i + 1) * band_height, :]
-            mean_brightness = np.mean(band_section)
-            mean_brightness_per_band.append(mean_brightness)
+        mean_brightness_per_band = np.zeros((bands, num_bands))
+        for band in range(bands):
+            for i in range(num_bands):
+                band_section = image[band, i * band_height:(i + 1) * band_height, :]
+                mean_brightness = np.mean(band_section)
+                mean_brightness_per_band[band, i] = mean_brightness
 
         corrected_image = np.copy(image)
-        for i in range(num_bands):
-            band_section = corrected_image[:, i * band_height:(i + 1) * band_height, :]
-            correction_factor = np.mean(mean_brightness_per_band) / mean_brightness_per_band[i]
-            corrected_image[:, i * band_height:(i + 1) * band_height, :] = np.clip(band_section * correction_factor, 0,
-                                                                                   255)
+        for band in range(bands):
+            for i in range(num_bands):
+                band_section = corrected_image[band, i * band_height:(i + 1) * band_height, :]
+                correction_factor = np.mean(mean_brightness_per_band[band]) / mean_brightness_per_band[band, i]
+                corrected_image[band, i * band_height:(i + 1) * band_height, :] = np.clip(
+                    band_section * correction_factor, 0, 255)
 
         with rasterio.open(output_image_path, 'w', **profile) as dst:
             dst.write(corrected_image)

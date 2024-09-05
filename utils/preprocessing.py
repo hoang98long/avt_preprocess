@@ -479,6 +479,8 @@ class Preprocessing:
                 return_flag = preprocess.equalize_hist(conn, id, task_param, ftp)
             elif algorithm == "hieu_chinh_sang":
                 return_flag = preprocess.illumination_correct(conn, id, task_param, ftp)
+            elif algorithm == "ket_xuat_dinh_dang":
+                return_flag = preprocess.image_format_convert(conn, id, task_param, ftp)
             cursor.close()
             if return_flag:
                 task_stat_value_holder['value'] = 1
