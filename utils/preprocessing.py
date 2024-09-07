@@ -134,7 +134,7 @@ class Preprocessing:
     def enhance_image(self, conn, id, task_param, ftp):
         input_file = task_param['input_file']
         do_tuong_phan = float(task_param['do_tuong_phan'])
-        do_sang = float(task_param['do_sang'])
+        do_sang = int(task_param['do_sang'])
         do_net = int(task_param['do_net'])
         try:
             filename = input_file.split("/")[-1]
