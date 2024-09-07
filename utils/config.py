@@ -10,6 +10,9 @@
 # LOCAL_SRC_EQUALIZE_IMAGE_PATH = 'modules/02_pre_process/images/equalize_image/source/'
 # LOCAL_RESULT_EQUALIZE_IMAGE_PATH = 'modules/02_pre_process/images/equalize_image/result/'
 
+LOCAL_SRC_ENHANCE_IMAGE_PATH = 'images/enhanced_image/source/'
+LOCAL_RESULT_ENHANCE_IMAGE_PATH = 'images/enhanced_image/result/'
+
 LOCAL_SRC_PREPROCESS_IMAGE_PATH = 'images/preprocess_image/source/'
 LOCAL_RESULT_PREPROCESS_IMAGE_PATH = 'images/preprocess_image/result/'
 

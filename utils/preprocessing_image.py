@@ -26,6 +26,22 @@ class Preprocessing_Image:
     def __init__(self):
         pass
 
+    def enhance_image(self, input_tiff, output_tiff, ALPHA, BETA, KERNEL):
+        SHARPEN_KERNEL = np.array([[-1, -1, -1],
+                                   [-1, KERNEL, -1],
+                                   [-1, -1, -1]])
+        with rasterio.open(input_tiff) as src:
+            profile = src.profile
+            image_data = src.read()
+            processed_data = np.zeros_like(image_data)
+            for i in range(image_data.shape[0]):
+                sharpened_image = cv2.filter2D(image_data[i], -1, SHARPEN_KERNEL)
+                contrast_image = cv2.convertScaleAbs(sharpened_image, alpha=ALPHA, beta=BETA)
+                processed_data[i] = cv2.equalizeHist(contrast_image)
+
+            with rasterio.open(output_tiff, 'w', **profile) as dst:
+                dst.write(processed_data)
+
     def preprocess_no_ir(self, tiff_image_path, output_path):
         with rasterio.open(tiff_image_path) as src:
             # Read the channels

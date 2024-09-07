@@ -12,6 +12,7 @@ import rasterio
 from rasterio.warp import calculate_default_transform, reproject, Resampling
 
 ftp_directory = json.load(open("ftp_directory.json"))
+FTP_ENHANCE_IMAGE_PATH = ftp_directory['enhance_image_result_directory']
 FTP_PREPROCESS_IMAGE_PATH = ftp_directory['preprocess_image_result_directory']
 FTP_MERGE_IMAGE_PATH = ftp_directory['merge_image_result_directory']
 FTP_FORMAT_CONVERT_PATH = ftp_directory['format_convert_result_directory']
@@ -129,6 +130,57 @@ def get_time_string():
 class Preprocessing:
     def __init__(self):
         pass
+
+    def enhance_image(self, conn, id, task_param, ftp):
+        input_file = task_param['input_file']
+        do_tuong_phan = float(task_param['do_tuong_phan'])
+        do_sang = float(task_param['do_sang'])
+        do_net = int(task_param['do_net'])
+        try:
+            filename = input_file.split("/")[-1]
+            local_file_path = os.path.join(LOCAL_SRC_ENHANCE_IMAGE_PATH, filename)
+            if not os.path.isfile(local_file_path):
+                download_file(ftp, input_file, local_file_path)
+            epsg_code = check_epsg_code(local_file_path)
+            if epsg_code == 0:
+                cursor = conn.cursor()
+                route_to_db(cursor)
+                cursor.execute("UPDATE avt_task SET task_stat = 0 AND task_message = 'EPSG ERROR' WHERE id = %s", (id,))
+                conn.commit()
+                return False
+            elif epsg_code != 4326:
+                converted_input_files_local = local_file_path.split(".")[0] + "_4326.tiff"
+                convert_epsg_4326(local_file_path, converted_input_files_local)
+                local_file_path = converted_input_files_local
+            date_create = get_time_string()
+            output_image_name = "result_enhance_" + format(date_create) + ".tiff"
+            output_path = os.path.join(LOCAL_RESULT_ENHANCE_IMAGE_PATH, output_image_name)
+            preprocess_image = Preprocessing_Image()
+            preprocess_image.enhance_image(local_file_path, output_path, do_tuong_phan, do_sang, do_net)
+            result_image_name = output_path.split("/")[-1]
+            ftp_dir = FTP_ENHANCE_IMAGE_PATH
+            ftp.cwd(str(ftp_dir))
+            save_dir = ftp_dir + "/" + result_image_name
+            task_output = str({
+                "output_image": [save_dir]
+            }).replace("'", "\"")
+            with open(output_path, "rb") as file:
+                ftp.storbinary(f"STOR {save_dir}", file)
+            ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            # print("Connection closed")
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
+                           (task_output, get_time(), id,))
+            conn.commit()
+            return True
+        except ftplib.all_errors as e:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
+            conn.commit()
+            # print(f"FTP error: {e}")
+            return False
 
     def preprocess_image(self, conn, id, task_param, ftp):
         input_file = task_param['input_file']
@@ -481,6 +533,8 @@ class Preprocessing:
                 return_flag = preprocess.illumination_correct(conn, id, task_param, ftp)
             elif algorithm == "ket_xuat_dinh_dang":
                 return_flag = preprocess.image_format_convert(conn, id, task_param, ftp)
+            elif algorithm == "nang_cao_chat_luong":
+                return_flag = preprocess.enhance_image(conn, id, task_param, ftp)
             cursor.close()
             if return_flag:
                 task_stat_value_holder['value'] = 1

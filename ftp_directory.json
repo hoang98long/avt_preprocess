@@ -1,4 +1,5 @@
 {
+    "enhance_image_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/nang_cao_chat_luong",
     "preprocess_image_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/tien_xu_ly",
     "merge_image_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/ghep_kenh_anh",
     "format_convert_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/doi_dinh_dang",
