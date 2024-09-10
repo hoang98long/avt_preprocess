@@ -277,7 +277,7 @@ class Preprocessing:
                 cursor = conn.cursor()
                 route_to_db(cursor)
                 cursor.execute(
-                    "UPDATE avt_task SET task_stat = 0 AND task_output = 'Can them anh IR' WHERE id = %s", (id,))
+                    "UPDATE avt_task SET task_stat = 0 AND task_message = 'Chua du kenh pho' WHERE id = %s", (id,))
                 conn.commit()
                 return False
             else:
