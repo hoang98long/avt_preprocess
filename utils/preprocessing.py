@@ -282,7 +282,7 @@ class Preprocessing:
                 return False
             else:
                 preprocess_image.merge_channel(local_file_path, output_path, selected_channels)
-                ftp_dir = FTP_MERGE_IR_PATH
+                ftp_dir = FTP_MERGE_CHANNEL_PATH
                 ftp.cwd(str(ftp_dir))
                 save_dir = ftp_dir + "/" + output_image_name
                 task_output = str({
