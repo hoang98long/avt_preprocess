@@ -14,7 +14,8 @@ from rasterio.warp import calculate_default_transform, reproject, Resampling
 ftp_directory = json.load(open("ftp_directory.json"))
 FTP_ENHANCE_IMAGE_PATH = ftp_directory['enhance_image_result_directory']
 FTP_PREPROCESS_IMAGE_PATH = ftp_directory['preprocess_image_result_directory']
-FTP_MERGE_IMAGE_PATH = ftp_directory['merge_image_result_directory']
+FTP_MERGE_IR_PATH = ftp_directory['merge_ir_result_directory']
+FTP_MERGE_CHANNEL_PATH = ftp_directory['merge_channel_result_directory']
 FTP_FORMAT_CONVERT_PATH = ftp_directory['format_convert_result_directory']
 FTP_SHARPEN_IMAGE_PATH = ftp_directory['sharpen_image_result_directory']
 FTP_ADJUST_IMAGE_PATH = ftp_directory['adjust_image_result_directory']
@@ -182,12 +183,12 @@ class Preprocessing:
             # print(f"FTP error: {e}")
             return False
 
-    def preprocess_image(self, conn, id, task_param, ftp):
+    def check_and_merge_ir(self, conn, id, task_param, ftp):
         input_file = task_param['input_file']
         input_file_ir = task_param['input_file_ir']
         try:
             filename = input_file.split("/")[-1]
-            local_file_path = os.path.join(LOCAL_SRC_PREPROCESS_IMAGE_PATH, filename)
+            local_file_path = os.path.join(LOCAL_SRC_MERGE_IR_PATH, filename)
             if not os.path.isfile(local_file_path):
                 download_file(ftp, input_file, local_file_path)
             epsg_code = check_epsg_code(local_file_path)
@@ -202,29 +203,29 @@ class Preprocessing:
                 convert_epsg_4326(local_file_path, converted_input_files_local)
                 local_file_path = converted_input_files_local
             date_create = get_time_string()
-            output_image_name = "result_preprocess_" + format(date_create) + ".tiff"
-            output_path = os.path.join(LOCAL_RESULT_PREPROCESS_IMAGE_PATH, output_image_name)
+            output_image_name = "result_merge_ir_" + format(date_create) + ".tiff"
+            output_path = os.path.join(LOCAL_RESULT_MERGE_IR_PATH, output_image_name)
             preprocess_image = Preprocessing_Image()
-            if input_file_ir is None:
+            if input_file_ir == "":
                 channel_check = preprocess_image.preprocess_no_ir(local_file_path, output_path)
                 if not channel_check:
                     cursor = conn.cursor()
                     route_to_db(cursor)
                     cursor.execute(
-                        "UPDATE avt_task SET task_stat = 0 AND task_message = 'Can them anh IR' WHERE id = %s", (id,))
+                        "UPDATE avt_task SET task_stat = 0 AND task_output = 'Can them anh IR' WHERE id = %s", (id,))
                     conn.commit()
                     return False
                 else:
                     cursor = conn.cursor()
                     route_to_db(cursor)
                     cursor.execute(
-                        "UPDATE avt_task SET task_stat = 0 AND task_message = 'Anh du kenh pho' WHERE id = %s",
+                        "UPDATE avt_task SET task_stat = 0 AND task_output = 'Anh du kenh pho' WHERE id = %s",
                         (id,))
                     conn.commit()
                     return True
             else:
                 preprocess_image.preprocess_ir(local_file_path, input_file_ir, output_path)
-                ftp_dir = FTP_PREPROCESS_IMAGE_PATH
+                ftp_dir = FTP_MERGE_IR_PATH
                 ftp.cwd(str(ftp_dir))
                 save_dir = ftp_dir + "/" + output_image_name
                 task_output = str({
@@ -250,19 +251,76 @@ class Preprocessing:
 
     def merge_channel(self, conn, id, task_param, ftp):
         input_file = task_param['input_file']
+        selected_channels = ast.literal_eval(task_param['selected_channels'])
+        try:
+            filename = input_file.split("/")[-1]
+            local_file_path = os.path.join(LOCAL_SRC_MERGE_CHANNEL_PATH, filename)
+            if not os.path.isfile(local_file_path):
+                download_file(ftp, input_file, local_file_path)
+            epsg_code = check_epsg_code(local_file_path)
+            if epsg_code == 0:
+                cursor = conn.cursor()
+                route_to_db(cursor)
+                cursor.execute("UPDATE avt_task SET task_stat = 0 AND task_message = 'EPSG ERROR' WHERE id = %s", (id,))
+                conn.commit()
+                return False
+            elif epsg_code != 4326:
+                converted_input_files_local = local_file_path.split(".")[0] + "_4326.tiff"
+                convert_epsg_4326(local_file_path, converted_input_files_local)
+                local_file_path = converted_input_files_local
+            date_create = get_time_string()
+            output_image_name = "result_merge_channel_" + format(date_create) + ".tiff"
+            output_path = os.path.join(LOCAL_RESULT_MERGE_CHANNEL_PATH, output_image_name)
+            preprocess_image = Preprocessing_Image()
+            channel_check = preprocess_image.preprocess_no_ir(local_file_path, output_path)
+            if not channel_check:
+                cursor = conn.cursor()
+                route_to_db(cursor)
+                cursor.execute(
+                    "UPDATE avt_task SET task_stat = 0 AND task_output = 'Can them anh IR' WHERE id = %s", (id,))
+                conn.commit()
+                return False
+            else:
+                preprocess_image.merge_channel(local_file_path, output_path, selected_channels)
+                ftp_dir = FTP_MERGE_IR_PATH
+                ftp.cwd(str(ftp_dir))
+                save_dir = ftp_dir + "/" + output_image_name
+                task_output = str({
+                    "output_image": [save_dir]
+                }).replace("'", "\"")
+                with open(output_path, "rb") as file:
+                    ftp.storbinary(f"STOR {save_dir}", file)
+                ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+                # print("Connection closed")
+                cursor = conn.cursor()
+                route_to_db(cursor)
+                cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
+                               (task_output, get_time(), id,))
+                conn.commit()
+                return True
+        except ftplib.all_errors as e:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
+            conn.commit()
+            # print(f"FTP error: {e}")
+            return False
+
+    def image_format_convert(self, conn, id, task_param, ftp):
+        input_file = task_param['input_file']
         single_bands = task_param['single_bands']
         single_bands = ast.literal_eval(single_bands)
         multi_bands = task_param['multi_bands']
         multi_bands = ast.literal_eval(multi_bands)
         try:
             filename = input_file.split("/")[-1]
-            local_file_path = LOCAL_SRC_MERGE_IMAGE_PATH + filename
+            local_file_path = LOCAL_SRC_FORMAT_CONVERT_PATH + filename
             if not os.path.isfile(local_file_path):
                 download_file(ftp, input_file, local_file_path)
             preprocess_image = Preprocessing_Image()
-            result_image_path = preprocess_image.merge_image(local_file_path, single_bands, multi_bands)
+            result_image_path = preprocess_image.image_format_convert(local_file_path, single_bands, multi_bands)
             result_image_name = result_image_path.split("/")[-1]
-            ftp_dir = FTP_MERGE_IMAGE_PATH + "/" + result_image_name.split(".")[0]
+            ftp_dir = FTP_FORMAT_CONVERT_PATH + "/" + result_image_name.split(".")[0]
             check_and_create_directory(ftp, ftp_dir)
             ftp.cwd(str(ftp_dir))
             export_types = ["png", "jpg", "tiff"]
@@ -295,47 +353,47 @@ class Preprocessing:
             # print(f"FTP error: {e}")
             return False
 
-    def image_format_convert(self, conn, id, task_param, ftp):
-        input_file = task_param['input_file']
-        try:
-            filename = input_file.split("/")[-1]
-            local_file_path = LOCAL_SRC_FORMAT_CONVERT_PATH + filename
-            if not os.path.isfile(local_file_path):
-                download_file(ftp, input_file, local_file_path)
-            preprocess_image = Preprocessing_Image()
-            result_image_path = preprocess_image.format_convert(local_file_path)
-            result_image_name = result_image_path.split("/")[-1]
-            ftp_dir = FTP_FORMAT_CONVERT_PATH + "/" + result_image_name.split(".")[0]
-            check_and_create_directory(ftp, ftp_dir)
-            ftp.cwd(str(ftp_dir))
-            export_types = ["png", "jpg"]
-            task_output_arr = []
-            for export_type in export_types:
-                filename = result_image_name + "." + export_type
-                with open(result_image_path + "." + export_type, "rb") as file:
-                    save_dir = ftp_dir + "/" + filename
-                    task_output_arr.append(save_dir)
-                    ftp.storbinary(f"STOR {save_dir}", file)
-                    ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
-            ftp.sendcmd(f'SITE CHMOD 775 {ftp_dir}')
-            # print("Connection closed")
-            task_output = str({
-                "png_image_output": task_output_arr[0],
-                "jpg_image_output": task_output_arr[1],
-            }).replace("'", "\"")
-            cursor = conn.cursor()
-            route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
-                           (task_output, get_time(), id,))
-            conn.commit()
-            return True
-        except ftplib.all_errors as e:
-            cursor = conn.cursor()
-            route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
-            conn.commit()
-            # print(f"FTP error: {e}")
-            return False
+    # def image_format_convert(self, conn, id, task_param, ftp):
+    #     input_file = task_param['input_file']
+    #     try:
+    #         filename = input_file.split("/")[-1]
+    #         local_file_path = LOCAL_SRC_FORMAT_CONVERT_PATH + filename
+    #         if not os.path.isfile(local_file_path):
+    #             download_file(ftp, input_file, local_file_path)
+    #         preprocess_image = Preprocessing_Image()
+    #         result_image_path = preprocess_image.format_convert(local_file_path)
+    #         result_image_name = result_image_path.split("/")[-1]
+    #         ftp_dir = FTP_FORMAT_CONVERT_PATH + "/" + result_image_name.split(".")[0]
+    #         check_and_create_directory(ftp, ftp_dir)
+    #         ftp.cwd(str(ftp_dir))
+    #         export_types = ["png", "jpg"]
+    #         task_output_arr = []
+    #         for export_type in export_types:
+    #             filename = result_image_name + "." + export_type
+    #             with open(result_image_path + "." + export_type, "rb") as file:
+    #                 save_dir = ftp_dir + "/" + filename
+    #                 task_output_arr.append(save_dir)
+    #                 ftp.storbinary(f"STOR {save_dir}", file)
+    #                 ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+    #         ftp.sendcmd(f'SITE CHMOD 775 {ftp_dir}')
+    #         # print("Connection closed")
+    #         task_output = str({
+    #             "png_image_output": task_output_arr[0],
+    #             "jpg_image_output": task_output_arr[1],
+    #         }).replace("'", "\"")
+    #         cursor = conn.cursor()
+    #         route_to_db(cursor)
+    #         cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
+    #                        (task_output, get_time(), id,))
+    #         conn.commit()
+    #         return True
+    #     except ftplib.all_errors as e:
+    #         cursor = conn.cursor()
+    #         route_to_db(cursor)
+    #         cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
+    #         conn.commit()
+    #         # print(f"FTP error: {e}")
+    #         return False
 
 
     def sharpen_image(self, conn, id, task_param, ftp):
@@ -521,8 +579,8 @@ class Preprocessing:
             ftp = connect_ftp(config_data)
             if algorithm == "ket_hop_kenh":
                 return_flag = preprocess.merge_channel(conn, id, task_param, ftp)
-            elif algorithm == "tien_xu_ly":
-                return_flag = preprocess.preprocess_image(conn, id, task_param, ftp)
+            elif algorithm == "kiem_tra_kenh_ir":
+                return_flag = preprocess.check_and_merge_ir(conn, id, task_param, ftp)
             elif algorithm == "lam_sac_net":
                 return_flag = preprocess.sharpen_image(conn, id, task_param, ftp)
             elif algorithm == "dieu_chinh_anh":

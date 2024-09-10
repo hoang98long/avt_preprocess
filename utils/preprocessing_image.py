@@ -46,7 +46,7 @@ class Preprocessing_Image:
         with rasterio.open(tiff_image_path) as src:
             # Read the channels
             channels = [src.read(i + 1) for i in range(src.count)]
-            print(len(channels))
+            # print(len(channels))
 
             # Check if there are 4 channels (including IR)
             ir_channel = channels[-1]
@@ -127,7 +127,20 @@ class Preprocessing_Image:
                 for i in range(4):
                     dst.write(combined_image[i], i + 1)
 
-    def merge_image(self, tiff_image_path, single_bands, multi_bands):
+    def merge_channel(self, input_tiff, output_tiff, selected_channels):
+        with rasterio.open(input_tiff) as src:
+            selected_data = src.read(selected_channels)
+
+            output_meta = src.meta.copy()
+            output_meta.update({
+                'count': len(selected_channels),  # Số kênh đầu ra
+                'dtype': selected_data.dtype
+            })
+
+            with rasterio.open(output_tiff, 'w', **output_meta) as dst:
+                dst.write(selected_data)
+
+    def image_format_convert(self, tiff_image_path, single_bands, multi_bands):
         """
 
             combine image channel.
@@ -166,7 +179,7 @@ class Preprocessing_Image:
         date_create = get_time_string()
         tiff_image_name = tiff_image_path.split("/")[-1]
         image_name_output = tiff_image_name.split(".")[0] + "_" + format(date_create)
-        result_image_path = LOCAL_RESULT_MERGE_IMAGE_PATH + "/" + image_name_output
+        result_image_path = LOCAL_RESULT_FORMAT_CONVERT_PATH + "/" + image_name_output
         export_types = ["png", "jpg", "tiff"]
         for image_type in export_types:
             if image_type == "png":

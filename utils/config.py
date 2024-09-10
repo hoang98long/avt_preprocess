@@ -16,8 +16,11 @@ LOCAL_RESULT_ENHANCE_IMAGE_PATH = 'images/enhanced_image/result/'
 LOCAL_SRC_PREPROCESS_IMAGE_PATH = 'images/preprocess_image/source/'
 LOCAL_RESULT_PREPROCESS_IMAGE_PATH = 'images/preprocess_image/result/'
 
-LOCAL_SRC_MERGE_IMAGE_PATH = 'images/merge_image/source/'
-LOCAL_RESULT_MERGE_IMAGE_PATH = 'images/merge_image/result/'
+LOCAL_SRC_MERGE_CHANNEL_PATH = 'images/merge_channel/source/'
+LOCAL_RESULT_MERGE_CHANNEL_PATH = 'images/merge_channel/result/'
+
+LOCAL_SRC_MERGE_IR_PATH = 'images/merge_ir/source/'
+LOCAL_RESULT_MERGE_IR_PATH = 'images/merge_ir/result/'
 
 LOCAL_SRC_FORMAT_CONVERT_PATH = 'images/format_convert/source/'
 LOCAL_RESULT_FORMAT_CONVERT_PATH = 'images/format_convert/result/'

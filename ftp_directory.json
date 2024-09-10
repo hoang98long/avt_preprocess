@@ -1,8 +1,9 @@
 {
     "enhance_image_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/nang_cao_chat_luong",
     "preprocess_image_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/tien_xu_ly",
-    "merge_image_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/ghep_kenh_anh",
-    "format_convert_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/doi_dinh_dang",
+    "merge_channel_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/ket_hop_kenh",
+    "merge_ir_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/ghep_kenh_hong_ngoai",
+    "format_convert_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/ket_xuat_dinh_dang",
     "sharpen_image_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/lam_sac_net",
     "adjust_image_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/dieu_chinh_anh",
     "equalize_image_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/can_bang_anh",
