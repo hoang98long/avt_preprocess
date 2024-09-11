@@ -168,6 +168,9 @@ class Preprocessing:
             with open(output_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            owner_group = 'avtadmin:avtadmin'
+            chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+            ftp.sendcmd(chown_command)
             # print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
@@ -234,6 +237,9 @@ class Preprocessing:
                 with open(output_path, "rb") as file:
                     ftp.storbinary(f"STOR {save_dir}", file)
                 ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+                owner_group = 'avtadmin:avtadmin'
+                chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+                ftp.sendcmd(chown_command)
                 # print("Connection closed")
                 cursor = conn.cursor()
                 route_to_db(cursor)
@@ -291,6 +297,9 @@ class Preprocessing:
                 with open(output_path, "rb") as file:
                     ftp.storbinary(f"STOR {save_dir}", file)
                 ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+                owner_group = 'avtadmin:avtadmin'
+                chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+                ftp.sendcmd(chown_command)
                 # print("Connection closed")
                 cursor = conn.cursor()
                 route_to_db(cursor)
@@ -332,7 +341,13 @@ class Preprocessing:
                     task_output_arr.append(save_dir)
                     ftp.storbinary(f"STOR {save_dir}", file)
                     ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+                    owner_group = 'avtadmin:avtadmin'
+                    chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+                    ftp.sendcmd(chown_command)
             ftp.sendcmd(f'SITE CHMOD 775 {ftp_dir}')
+            owner_group = 'avtadmin:avtadmin'
+            chown_command = f'SITE CHOWN {owner_group} {ftp_dir}'
+            ftp.sendcmd(chown_command)
             # print("Connection closed")
             task_output = str({
                 "png_image_output": task_output_arr[0],
@@ -420,6 +435,9 @@ class Preprocessing:
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            owner_group = 'avtadmin:avtadmin'
+            chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+            ftp.sendcmd(chown_command)
             # print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
@@ -455,6 +473,9 @@ class Preprocessing:
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            owner_group = 'avtadmin:avtadmin'
+            chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+            ftp.sendcmd(chown_command)
             # print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
@@ -491,6 +512,9 @@ class Preprocessing:
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            owner_group = 'avtadmin:avtadmin'
+            chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+            ftp.sendcmd(chown_command)
             # print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
@@ -539,6 +563,9 @@ class Preprocessing:
             with open(output_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            owner_group = 'avtadmin:avtadmin'
+            chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+            ftp.sendcmd(chown_command)
             # print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
