@@ -168,9 +168,9 @@ class Preprocessing:
             with open(output_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
-            owner_group = 'avtadmin:avtadmin'
-            chown_command = f'SITE CHOWN {owner_group} {save_dir}'
-            ftp.sendcmd(chown_command)
+            # owner_group = 'avtadmin:avtadmin'
+            # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+            # ftp.sendcmd(chown_command)
             # print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
@@ -435,9 +435,9 @@ class Preprocessing:
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
-            owner_group = 'avtadmin:avtadmin'
-            chown_command = f'SITE CHOWN {owner_group} {save_dir}'
-            ftp.sendcmd(chown_command)
+            # owner_group = 'avtadmin:avtadmin'
+            # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+            # ftp.sendcmd(chown_command)
             # print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
@@ -473,9 +473,9 @@ class Preprocessing:
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
-            owner_group = 'avtadmin:avtadmin'
-            chown_command = f'SITE CHOWN {owner_group} {save_dir}'
-            ftp.sendcmd(chown_command)
+            # owner_group = 'avtadmin:avtadmin'
+            # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+            # ftp.sendcmd(chown_command)
             # print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
@@ -512,9 +512,9 @@ class Preprocessing:
             with open(result_image_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
-            owner_group = 'avtadmin:avtadmin'
-            chown_command = f'SITE CHOWN {owner_group} {save_dir}'
-            ftp.sendcmd(chown_command)
+            # owner_group = 'avtadmin:avtadmin'
+            # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+            # ftp.sendcmd(chown_command)
             # print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
@@ -563,9 +563,9 @@ class Preprocessing:
             with open(output_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
-            owner_group = 'avtadmin:avtadmin'
-            chown_command = f'SITE CHOWN {owner_group} {save_dir}'
-            ftp.sendcmd(chown_command)
+            # owner_group = 'avtadmin:avtadmin'
+            # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+            # ftp.sendcmd(chown_command)
             # print("Connection closed")
             cursor = conn.cursor()
             route_to_db(cursor)
