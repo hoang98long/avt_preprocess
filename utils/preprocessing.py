@@ -150,11 +150,11 @@ class Preprocessing:
                 conn.commit()
                 return False
             elif epsg_code != 4326:
-                converted_input_files_local = local_file_path.split(".")[0] + "_4326.tiff"
+                converted_input_files_local = local_file_path.split(".")[0] + "_4326.tif"
                 convert_epsg_4326(local_file_path, converted_input_files_local)
                 local_file_path = converted_input_files_local
             date_create = get_time_string()
-            output_image_name = "result_enhance_" + format(date_create) + ".tiff"
+            output_image_name = "result_enhance_" + format(date_create) + ".tif"
             output_path = os.path.join(LOCAL_RESULT_ENHANCE_IMAGE_PATH, output_image_name)
             preprocess_image = Preprocessing_Image()
             preprocess_image.enhance_image(local_file_path, output_path, do_tuong_phan, do_sang, do_net)
@@ -202,11 +202,11 @@ class Preprocessing:
                 conn.commit()
                 return False
             elif epsg_code != 4326:
-                converted_input_files_local = local_file_path.split(".")[0] + "_4326.tiff"
+                converted_input_files_local = local_file_path.split(".")[0] + "_4326.tif"
                 convert_epsg_4326(local_file_path, converted_input_files_local)
                 local_file_path = converted_input_files_local
             date_create = get_time_string()
-            output_image_name = "result_merge_ir_" + format(date_create) + ".tiff"
+            output_image_name = "result_merge_ir_" + format(date_create) + ".tif"
             output_path = os.path.join(LOCAL_RESULT_MERGE_IR_PATH, output_image_name)
             preprocess_image = Preprocessing_Image()
             if input_file_ir == "":
@@ -271,11 +271,11 @@ class Preprocessing:
                 conn.commit()
                 return False
             elif epsg_code != 4326:
-                converted_input_files_local = local_file_path.split(".")[0] + "_4326.tiff"
+                converted_input_files_local = local_file_path.split(".")[0] + "_4326.tif"
                 convert_epsg_4326(local_file_path, converted_input_files_local)
                 local_file_path = converted_input_files_local
             date_create = get_time_string()
-            output_image_name = "result_merge_channel_" + format(date_create) + ".tiff"
+            output_image_name = "result_merge_channel_" + format(date_create) + ".tif"
             output_path = os.path.join(LOCAL_RESULT_MERGE_CHANNEL_PATH, output_image_name)
             preprocess_image = Preprocessing_Image()
             channel_check = preprocess_image.preprocess_no_ir(local_file_path, output_path)
@@ -545,11 +545,11 @@ class Preprocessing:
                 conn.commit()
                 return False
             elif epsg_code != 4326:
-                converted_input_files_local = local_file_path.split(".")[0] + "_4326.tiff"
+                converted_input_files_local = local_file_path.split(".")[0] + "_4326.tif"
                 convert_epsg_4326(local_file_path, converted_input_files_local)
                 local_file_path = converted_input_files_local
             date_create = get_time_string()
-            output_image_name = "result_illum_correct_" + format(date_create) + ".tiff"
+            output_image_name = "result_illum_correct_" + format(date_create) + ".tif"
             output_path = os.path.join(LOCAL_RESULT_ILLUM_CORRECT_IMAGE_PATH, output_image_name)
             preprocess_image = Preprocessing_Image()
             preprocess_image.illumination_correct(local_file_path, output_path)

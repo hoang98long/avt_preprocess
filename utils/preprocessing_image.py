@@ -187,7 +187,7 @@ class Preprocessing_Image:
             elif image_type == "jpg":
                 cv2.imwrite(result_image_path + ".jpg", bands_stack)
             elif image_type == "tiff":
-                image_name_output = result_image_path + ".tiff"
+                image_name_output = result_image_path + ".tif"
                 convert_to_tiff(tiff_image_path, image_name_output, bands_stack)
         return result_image_path
 
@@ -224,7 +224,7 @@ class Preprocessing_Image:
         result = cv2.convertScaleAbs(sharp_image, alpha=contrast, beta=brightness)
         image_name = ORG_image_path.split("/")[-1]
         date_create = get_time_string()
-        image_name_output = "sharpen_image_" + image_name.split(".")[0] + "_" + format(date_create) + ".tiff"
+        image_name_output = "sharpen_image_" + image_name.split(".")[0] + "_" + format(date_create) + ".tif"
         result_image_path = LOCAL_RESULT_SHARPEN_IMAGE_PATH + "/" + image_name_output
         # cv2.imwrite(result_image_path, result)
         convert_to_tiff(ORG_image_path, result_image_path, result)
@@ -240,7 +240,7 @@ class Preprocessing_Image:
         result = cv2.LUT(src_img, lookUpTable)
         image_name = src_img_path.split("/")[-1]
         date_create = get_time_string()
-        image_name_output = "adjust_image_" + image_name.split(".")[0] + "_" + format(date_create) + ".tiff"
+        image_name_output = "adjust_image_" + image_name.split(".")[0] + "_" + format(date_create) + ".tif"
         result_image_path = LOCAL_RESULT_ADJUST_IMAGE_PATH + "/" + image_name_output
         # cv2.imwrite(result_image_path, result)
         convert_to_tiff(src_img_path, result_image_path, result)
@@ -264,7 +264,7 @@ class Preprocessing_Image:
         result = cv2.cvtColor(ycrcb_img, cv2.COLOR_YCrCb2BGR)
         image_name = src_img_path.split("/")[-1]
         date_create = get_time_string()
-        image_name_output = "equalize_image_" + image_name.split(".")[0] + "_" + format(date_create) + ".tiff"
+        image_name_output = "equalize_image_" + image_name.split(".")[0] + "_" + format(date_create) + ".tif"
         result_image_path = LOCAL_RESULT_EQUALIZE_IMAGE_PATH + "/" + image_name_output
         # cv2.imwrite(result_image_path, result)
         convert_to_tiff(src_img_path, result_image_path, result)
