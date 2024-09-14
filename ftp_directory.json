@@ -1,7 +1,7 @@
 {
     "enhance_image_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/nang_cao_chat_luong",
     "preprocess_image_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/tien_xu_ly",
-    "merge_channel_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/ket_hop_kenh",
+    "merge_channel_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/ghep_kenh_anh",
     "merge_ir_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/ghep_kenh_hong_ngoai",
     "format_convert_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/ket_xuat_dinh_dang",
     "sharpen_image_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/lam_sac_net",
