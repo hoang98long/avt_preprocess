@@ -278,7 +278,8 @@ class Preprocessing:
             output_image_name = "result_merge_channel_" + format(date_create) + ".tif"
             output_path = os.path.join(LOCAL_RESULT_MERGE_CHANNEL_PATH, output_image_name)
             preprocess_image = Preprocessing_Image()
-            channel_check = preprocess_image.preprocess_no_ir(local_file_path, output_path)
+            channel_check = preprocess_image.band_check(local_file_path)
+            print(channel_check)
             if not channel_check:
                 cursor = conn.cursor()
                 route_to_db(cursor)
@@ -297,9 +298,9 @@ class Preprocessing:
                 with open(output_path, "rb") as file:
                     ftp.storbinary(f"STOR {save_dir}", file)
                 ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
-                owner_group = 'avtadmin:avtadmin'
-                chown_command = f'SITE CHOWN {owner_group} {save_dir}'
-                ftp.sendcmd(chown_command)
+                # owner_group = 'avtadmin:avtadmin'
+                # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+                # ftp.sendcmd(chown_command)
                 # print("Connection closed")
                 cursor = conn.cursor()
                 route_to_db(cursor)
@@ -345,9 +346,9 @@ class Preprocessing:
                     chown_command = f'SITE CHOWN {owner_group} {save_dir}'
                     ftp.sendcmd(chown_command)
             ftp.sendcmd(f'SITE CHMOD 775 {ftp_dir}')
-            owner_group = 'avtadmin:avtadmin'
-            chown_command = f'SITE CHOWN {owner_group} {ftp_dir}'
-            ftp.sendcmd(chown_command)
+            # owner_group = 'avtadmin:avtadmin'
+            # chown_command = f'SITE CHOWN {owner_group} {ftp_dir}'
+            # ftp.sendcmd(chown_command)
             # print("Connection closed")
             task_output = str({
                 "png_image_output": task_output_arr[0],

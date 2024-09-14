@@ -42,6 +42,23 @@ class Preprocessing_Image:
             with rasterio.open(output_tiff, 'w', **profile) as dst:
                 dst.write(processed_data)
 
+    def band_check(self, tiff_image_path):
+        with rasterio.open(tiff_image_path) as src:
+            # Read the channels
+            channels = [src.read(i + 1) for i in range(src.count)]
+            # print(len(channels))
+
+            # Check if there are 4 channels (including IR)
+            ir_channel = channels[-1]
+            rgb_channels = channels[:-1]
+
+            # Detect if there are identical channels
+            for i in range(len(channels)):
+                for j in range(i + 1, len(channels)):
+                    if np.array_equal(channels[i], channels[j]):
+                        return False
+        return True
+
     def preprocess_no_ir(self, tiff_image_path, output_path):
         with rasterio.open(tiff_image_path) as src:
             # Read the channels
@@ -128,6 +145,8 @@ class Preprocessing_Image:
                     dst.write(combined_image[i], i + 1)
 
     def merge_channel(self, input_tiff, output_tiff, selected_channels):
+        # selected_channels = np.array(selected_channels) + 1
+        # print(selected_channels)
         with rasterio.open(input_tiff) as src:
             selected_data = src.read(selected_channels)
 
