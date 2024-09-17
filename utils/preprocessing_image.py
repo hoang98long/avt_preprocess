@@ -1,11 +1,15 @@
-import numpy as np
-import tifffile as tiff
 import cv2
 import datetime
 from datetime import datetime
 from utils.convert_to_tiff import convert_to_tiff
 from utils.config import *
 import rasterio
+from rasterio.mask import mask
+from shapely.geometry import Polygon
+from shapely.geometry.polygon import orient
+import numpy as np
+from rasterio.enums import Resampling
+from PIL import Image
 
 
 def normalize_band(band):
@@ -159,56 +163,125 @@ class Preprocessing_Image:
             with rasterio.open(output_tiff, 'w', **output_meta) as dst:
                 dst.write(selected_data)
 
-    def image_format_convert(self, tiff_image_path, single_bands, multi_bands):
-        """
+    # def image_format_convert(self, tiff_image_path, single_bands, multi_bands):
+    #     """
+    #
+    #         combine image channel.
+    #         Args:
+    #             tiff_image_path (str): path to tiff image
+    #             single_bands (List[Integer]): list chosen band. e.g: [0, 3, 4]
+    #             multi_bands (List[List[Integer], Integer]): list [multi-bands, combine mode(max: 0 or average: 1)]
+    #                                                         e.g: [[[3, 5, 4], 0], [[4, 2], 1]]
+    #         Returns:
+    #             jpg image
+    #             png image
+    #             tiff image
+    #         Examples:
+    #
+    #         """
+    #     input_image = tiff.imread(tiff_image_path)
+    #     bands_list = []
+    #     if len(single_bands) == 0 and len(multi_bands) == 0:  # set default value
+    #         single_bands = [0, 1, 2]
+    #     if len(single_bands) > 0:
+    #         for s_band in single_bands:
+    #             bands_list.append(input_image[s_band, :, :])
+    #     if len(multi_bands) > 0:
+    #         for [m_band, mode] in multi_bands:
+    #             merge_band = []
+    #             if mode == 0:  # max value
+    #                 for band in m_band:
+    #                     merge_band.append(input_image[band, :, :])
+    #                 bands_list.append(np.maximum.reduce(merge_band))
+    #             elif mode == 1:  # average value
+    #                 for band in m_band:
+    #                     merge_band.append(input_image[band, :, :])
+    #                 bands_list.append(np.mean(merge_band, axis=0))
+    #     bands_list_normalize = [normalize_band(band) for band in bands_list]
+    #     bands_stack = np.stack(bands_list_normalize, axis=2)
+    #     date_create = get_time_string()
+    #     tiff_image_name = tiff_image_path.split("/")[-1]
+    #     image_name_output = tiff_image_name.split(".")[0] + "_" + format(date_create)
+    #     result_image_path = LOCAL_RESULT_FORMAT_CONVERT_PATH + "/" + image_name_output
+    #     export_types = ["png", "jpg", "tiff"]
+    #     for image_type in export_types:
+    #         if image_type == "png":
+    #             cv2.imwrite(result_image_path + ".png", bands_stack)
+    #         elif image_type == "jpg":
+    #             cv2.imwrite(result_image_path + ".jpg", bands_stack)
+    #         elif image_type == "tiff":
+    #             image_name_output = result_image_path + ".tif"
+    #             convert_to_tiff(tiff_image_path, image_name_output, bands_stack)
+    #     return result_image_path
 
-            combine image channel.
-            Args:
-                tiff_image_path (str): path to tiff image
-                single_bands (List[Integer]): list chosen band. e.g: [0, 3, 4]
-                multi_bands (List[List[Integer], Integer]): list [multi-bands, combine mode(max: 0 or average: 1)]
-                                                            e.g: [[[3, 5, 4], 0], [[4, 2], 1]]
-            Returns:
-                jpg image
-                png image
-                tiff image
-            Examples:
+    def image_format_convert(self, tiff_path, output_path, polygon_coords, selected_channels, new_resolution, output_formats):
+        with rasterio.open(tiff_path) as src:
+            # Bước 2: Chuyển đổi tọa độ của đa giác sang định dạng của ảnh TIFF nếu cần
+            polygon = Polygon(polygon_coords)
 
-            """
-        input_image = tiff.imread(tiff_image_path)
-        bands_list = []
-        if len(single_bands) == 0 and len(multi_bands) == 0:  # set default value
-            single_bands = [0, 1, 2]
-        if len(single_bands) > 0:
-            for s_band in single_bands:
-                bands_list.append(input_image[s_band, :, :])
-        if len(multi_bands) > 0:
-            for [m_band, mode] in multi_bands:
-                merge_band = []
-                if mode == 0:  # max value
-                    for band in m_band:
-                        merge_band.append(input_image[band, :, :])
-                    bands_list.append(np.maximum.reduce(merge_band))
-                elif mode == 1:  # average value
-                    for band in m_band:
-                        merge_band.append(input_image[band, :, :])
-                    bands_list.append(np.mean(merge_band, axis=0))
-        bands_list_normalize = [normalize_band(band) for band in bands_list]
-        bands_stack = np.stack(bands_list_normalize, axis=2)
-        date_create = get_time_string()
-        tiff_image_name = tiff_image_path.split("/")[-1]
-        image_name_output = tiff_image_name.split(".")[0] + "_" + format(date_create)
-        result_image_path = LOCAL_RESULT_FORMAT_CONVERT_PATH + "/" + image_name_output
-        export_types = ["png", "jpg", "tiff"]
-        for image_type in export_types:
-            if image_type == "png":
-                cv2.imwrite(result_image_path + ".png", bands_stack)
-            elif image_type == "jpg":
-                cv2.imwrite(result_image_path + ".jpg", bands_stack)
-            elif image_type == "tiff":
-                image_name_output = result_image_path + ".tif"
-                convert_to_tiff(tiff_image_path, image_name_output, bands_stack)
-        return result_image_path
+            # Sắp xếp lại các điểm trong đa giác theo thứ tự không cắt chéo
+            oriented_polygon = orient(polygon, sign=1.0)
+
+            # Bước 3: Cắt ảnh TIFF theo đa giác
+            out_image, out_transform = mask(src, [oriented_polygon], crop=True)
+            out_meta = src.meta.copy()
+
+            # Bước 4: Thay đổi độ phân giải
+            original_width = out_image.shape[2]
+            original_height = out_image.shape[1]
+            new_width = int(original_width * new_resolution)
+            new_height = int(original_height * new_resolution)
+
+            # Thay đổi kích thước của từng kênh
+            resized_channels = []
+            for i in selected_channels:
+                resized_channel = np.empty((new_height, new_width), dtype=out_image.dtype)
+                rasterio.warp.reproject(
+                    out_image[i - 1],  # Chọn kênh theo chỉ số đã cho (kênh bắt đầu từ 0)
+                    resized_channel,
+                    src_transform=out_transform,
+                    src_crs=src.crs,
+                    dst_transform=out_transform,
+                    dst_crs=src.crs,
+                    resampling=Resampling.bilinear
+                )
+                resized_channels.append(resized_channel)
+
+            merged_image = np.stack(resized_channels, axis=0)
+            for output_format in output_formats:
+                if output_format in ['png', 'jpg']:
+                    output_path = output_path + "." + output_format
+                    merged_image_8bit = (merged_image / merged_image.max() * 255).astype(np.uint8)
+                    image_pil = Image.fromarray(np.moveaxis(merged_image_8bit, 0,
+                                                            -1))
+                    image_pil.save(output_path, format=output_format.upper())
+
+                elif output_format in ['8_bit']:
+                    output_path = output_path + "_8_bit.tif"
+                    merged_image_8bit = (merged_image / merged_image.max() * 255).astype(np.uint8)
+                    out_meta.update({"dtype": 'uint8', "driver": "GTiff"})
+                    with rasterio.open(output_path, "w", **out_meta) as dest:
+                        dest.write(merged_image_8bit)
+
+                elif output_format in ['16_bit']:
+                    output_path = output_path + "_16_bit.tif"
+                    merged_image_16bit = (merged_image / merged_image.max() * 65535).astype(np.uint16)
+                    out_meta.update({"dtype": 'uint16', "driver": "GTiff"})
+                    with rasterio.open(output_path, "w", **out_meta) as dest:
+                        dest.write(merged_image_16bit)
+
+                else:
+                    output_path = output_path + ".tif"
+                    out_meta.update({
+                        "driver": "GTiff",
+                        "height": new_height,
+                        "width": new_width,
+                        "transform": out_transform,
+                        "count": len(selected_channels)
+                    })
+                    with rasterio.open(output_path, "w", **out_meta) as dest:
+                        dest.write(merged_image)
+
 
     def sharpen_image(self, ORG_image_path, PAN_image_path, contrast=3.0, brightness=20):
         """

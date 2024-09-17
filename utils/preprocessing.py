@@ -318,43 +318,75 @@ class Preprocessing:
 
     def image_format_convert(self, conn, id, task_param, ftp):
         input_file = task_param['input_file']
-        single_bands = task_param['single_bands']
-        single_bands = ast.literal_eval(single_bands)
-        multi_bands = task_param['multi_bands']
-        multi_bands = ast.literal_eval(multi_bands)
+        polygon_coords = task_param['polygon']
+        selected_channels = task_param['selected_channels']
+        new_resolution = float(task_param['resolution'])
+        output_formats = task_param['output_formats']
         try:
             filename = input_file.split("/")[-1]
             local_file_path = LOCAL_SRC_FORMAT_CONVERT_PATH + filename
             if not os.path.isfile(local_file_path):
                 download_file(ftp, input_file, local_file_path)
+            date_create = get_time_string()
+            output_image_name = "result_convert_" + format(date_create)
+            output_path = os.path.join(LOCAL_RESULT_FORMAT_CONVERT_PATH, output_image_name)
             preprocess_image = Preprocessing_Image()
-            result_image_path = preprocess_image.image_format_convert(local_file_path, single_bands, multi_bands)
-            result_image_name = result_image_path.split("/")[-1]
-            ftp_dir = FTP_FORMAT_CONVERT_PATH + "/" + result_image_name.split(".")[0]
+            preprocess_image.image_format_convert(local_file_path, output_path, polygon_coords,
+                                                  selected_channels, new_resolution, output_formats)
+            ftp_dir = FTP_FORMAT_CONVERT_PATH + "/" + output_image_name
             check_and_create_directory(ftp, ftp_dir)
-            ftp.cwd(str(ftp_dir))
-            export_types = ["png", "jpg", "tiff"]
-            task_output_arr = []
-            for export_type in export_types:
-                filename = result_image_name + "." + export_type
-                with open(result_image_path + "." + export_type, "rb") as file:
-                    save_dir = ftp_dir + "/" + filename
-                    task_output_arr.append(save_dir)
-                    ftp.storbinary(f"STOR {save_dir}", file)
-                    ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
-                    owner_group = 'avtadmin:avtadmin'
-                    chown_command = f'SITE CHOWN {owner_group} {save_dir}'
-                    ftp.sendcmd(chown_command)
             ftp.sendcmd(f'SITE CHMOD 775 {ftp_dir}')
-            # owner_group = 'avtadmin:avtadmin'
-            # chown_command = f'SITE CHOWN {owner_group} {ftp_dir}'
-            # ftp.sendcmd(chown_command)
+            ftp.cwd(str(ftp_dir))
+            task_output = {
+                "png_image_output": "",
+                "jpg_image_output": "",
+                "8_bit_image_output": "",
+                "16_bit_image_output": "",
+                "tif_image_output": ""
+            }
+            for output_format in output_formats:
+                if output_format == 'png':
+                    filename = output_image_name + ".png"
+                    file_path = os.path.join(LOCAL_RESULT_FORMAT_CONVERT_PATH, filename)
+                    with open(file_path, "rb") as file:
+                        save_dir = ftp_dir + "/" + filename
+                        ftp.storbinary(f"STOR {save_dir}", file)
+                        ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+                    task_output["png_image_output"] = save_dir
+                elif output_format == 'jpg':
+                    filename = output_image_name + ".jpg"
+                    file_path = os.path.join(LOCAL_RESULT_FORMAT_CONVERT_PATH, filename)
+                    with open(file_path, "rb") as file:
+                        save_dir = ftp_dir + "/" + filename
+                        ftp.storbinary(f"STOR {save_dir}", file)
+                        ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+                    task_output["jpg_image_output"] = save_dir
+                elif output_format == '8_bit':
+                    filename = output_image_name + "_8_bit.tif"
+                    file_path = os.path.join(LOCAL_RESULT_FORMAT_CONVERT_PATH, filename)
+                    with open(file_path, "rb") as file:
+                        save_dir = ftp_dir + "/" + filename
+                        ftp.storbinary(f"STOR {save_dir}", file)
+                        ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+                    task_output["8_bit_image_output"] = save_dir
+                elif output_format == '16_bit':
+                    filename = output_image_name + "_16_bit.tif"
+                    file_path = os.path.join(LOCAL_RESULT_FORMAT_CONVERT_PATH, filename)
+                    with open(file_path, "rb") as file:
+                        save_dir = ftp_dir + "/" + filename
+                        ftp.storbinary(f"STOR {save_dir}", file)
+                        ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+                    task_output["16_bit_image_output"] = save_dir
+                else:
+                    filename = output_image_name + ".tif"
+                    file_path = os.path.join(LOCAL_RESULT_FORMAT_CONVERT_PATH, filename)
+                    with open(file_path, "rb") as file:
+                        save_dir = ftp_dir + "/" + filename
+                        ftp.storbinary(f"STOR {save_dir}", file)
+                        ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+                    task_output["tif_image_output"] = save_dir
+            task_output = str(task_output).replace("'", "\"")
             # print("Connection closed")
-            task_output = str({
-                "png_image_output": task_output_arr[0],
-                "jpg_image_output": task_output_arr[1],
-                "tiff_image_output": task_output_arr[2]
-            }).replace("'", "\"")
             cursor = conn.cursor()
             route_to_db(cursor)
             cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
@@ -368,6 +400,59 @@ class Preprocessing:
             conn.commit()
             # print(f"FTP error: {e}")
             return False
+
+    # def image_format_convert(self, conn, id, task_param, ftp):
+    #     input_file = task_param['input_file']
+    #     single_bands = task_param['single_bands']
+    #     single_bands = ast.literal_eval(single_bands)
+    #     multi_bands = task_param['multi_bands']
+    #     multi_bands = ast.literal_eval(multi_bands)
+    #     try:
+    #         filename = input_file.split("/")[-1]
+    #         local_file_path = LOCAL_SRC_FORMAT_CONVERT_PATH + filename
+    #         if not os.path.isfile(local_file_path):
+    #             download_file(ftp, input_file, local_file_path)
+    #         preprocess_image = Preprocessing_Image()
+    #         result_image_path = preprocess_image.image_format_convert(local_file_path, single_bands, multi_bands)
+    #         result_image_name = result_image_path.split("/")[-1]
+    #         ftp_dir = FTP_FORMAT_CONVERT_PATH + "/" + result_image_name.split(".")[0]
+    #         check_and_create_directory(ftp, ftp_dir)
+    #         ftp.cwd(str(ftp_dir))
+    #         export_types = ["png", "jpg", "tiff"]
+    #         task_output_arr = []
+    #         for export_type in export_types:
+    #             filename = result_image_name + "." + export_type
+    #             with open(result_image_path + "." + export_type, "rb") as file:
+    #                 save_dir = ftp_dir + "/" + filename
+    #                 task_output_arr.append(save_dir)
+    #                 ftp.storbinary(f"STOR {save_dir}", file)
+    #                 ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+    #                 owner_group = 'avtadmin:avtadmin'
+    #                 chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+    #                 ftp.sendcmd(chown_command)
+    #         ftp.sendcmd(f'SITE CHMOD 775 {ftp_dir}')
+    #         # owner_group = 'avtadmin:avtadmin'
+    #         # chown_command = f'SITE CHOWN {owner_group} {ftp_dir}'
+    #         # ftp.sendcmd(chown_command)
+    #         # print("Connection closed")
+    #         task_output = str({
+    #             "png_image_output": task_output_arr[0],
+    #             "jpg_image_output": task_output_arr[1],
+    #             "tiff_image_output": task_output_arr[2]
+    #         }).replace("'", "\"")
+    #         cursor = conn.cursor()
+    #         route_to_db(cursor)
+    #         cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
+    #                        (task_output, get_time(), id,))
+    #         conn.commit()
+    #         return True
+    #     except ftplib.all_errors as e:
+    #         cursor = conn.cursor()
+    #         route_to_db(cursor)
+    #         cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
+    #         conn.commit()
+    #         # print(f"FTP error: {e}")
+    #         return False
 
     # def image_format_convert(self, conn, id, task_param, ftp):
     #     input_file = task_param['input_file']
@@ -410,7 +495,6 @@ class Preprocessing:
     #         conn.commit()
     #         # print(f"FTP error: {e}")
     #         return False
-
 
     def sharpen_image(self, conn, id, task_param, ftp):
         ORG_input_file = task_param['input_file']
