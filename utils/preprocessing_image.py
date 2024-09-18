@@ -282,45 +282,41 @@ class Preprocessing_Image:
                     with rasterio.open(output_path, "w", **out_meta) as dest:
                         dest.write(merged_image)
 
+    def sharpen_image(self, ORG_image_path, PAN_image_path):
+        weights = np.array([0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125])
 
-    def sharpen_image(self, ORG_image_path, PAN_image_path, contrast=3.0, brightness=20):
-        """
-            Áp dụng thuật toán Brovey pansharpen trên ảnh đa kênh
+        with rasterio.open(ORG_image_path) as pan_dataset:
+            HR_PAN = pan_dataset.read(1).astype(np.float32)
+            pan_meta = pan_dataset.meta
 
-            Args:
-            ORG_image_path: str
-                ảnh độ phân giải thấp đa kênh.
-            PAN_image_path: str
-                ảnh toàn sắc độ phân giải cao.
-            contrast: độ tương phản
-            brightness: độ sáng
-            Returns:
-            numpy.ndarray
-                Ảnh pansharpened với độ phân giải cao.
-            """
-        ORG_image = cv2.imread(ORG_image_path)
-        PAN_image = cv2.imread(PAN_image_path)
-        PAN_image = cv2.cvtColor(PAN_image, code=cv2.COLOR_BGR2GRAY)
-        num_bands = int(ORG_image.shape[2])
-        band_weights = [1 / num_bands for _ in range(num_bands)]
-        ORG_image = cv2.resize(ORG_image, (PAN_image.shape[1], PAN_image.shape[0]))
-        ORG_image = ORG_image.astype(np.float32)
-        PAN_image = PAN_image.astype(np.float32)
-        channels = [ORG_image[:, :, i] for i in range(ORG_image.shape[2])]
-        weighted_sum = sum(w * ch for w, ch in zip(band_weights, channels))
+        with rasterio.open(PAN_image_path) as lr_dataset:
+            LR_8CH = lr_dataset.read().astype(np.float32)
+            lr_meta = lr_dataset.meta
+
+        height, width = HR_PAN.shape
+        LR_8CH_resized = np.zeros((LR_8CH.shape[0], height, width), dtype=np.float32)
+
+        for i in range(LR_8CH.shape[0]):
+            LR_8CH_resized[i, :, :] = np.resize(LR_8CH[i, :, :], (height, width))
+
+        channels = [LR_8CH_resized[i, :, :] for i in range(LR_8CH_resized.shape[0])]
+        HR_PAN = channels[0]
+        weighted_sum = sum(w * ch for w, ch in zip(weights, channels))
         weighted_sum[weighted_sum == 0] = 1e-6
-        ratios = [w * ch / weighted_sum for w, ch in zip(band_weights, channels)]
-        sharp_channels = [ratio * PAN_image for ratio in ratios]
-        sharp_image = np.stack(sharp_channels, axis=-1)
-        sharp_image = np.clip(sharp_image, 0, 255).astype(np.uint8)
-        result = cv2.convertScaleAbs(sharp_image, alpha=contrast, beta=brightness)
+        ratios = [w * ch / weighted_sum for w, ch in zip(weights, channels)]
+        sharp_channels = [ratio * HR_PAN for ratio in ratios]
+        sharp_image = np.stack(sharp_channels, axis=0)
+        pan_meta.update({
+            "count": LR_8CH.shape[0],
+            "dtype": "uint8"
+        })
         image_name = ORG_image_path.split("/")[-1]
         date_create = get_time_string()
         image_name_output = "sharpen_image_" + image_name.split(".")[0] + "_" + format(date_create) + ".tif"
-        result_image_path = LOCAL_RESULT_SHARPEN_IMAGE_PATH + "/" + image_name_output
-        # cv2.imwrite(result_image_path, result)
-        convert_to_tiff(ORG_image_path, result_image_path, result)
-        return result_image_path
+        output_path = LOCAL_RESULT_SHARPEN_IMAGE_PATH + "/" + image_name_output
+        with rasterio.open(output_path, 'w', **pan_meta) as dst:
+            dst.write(np.clip(sharp_image, 0, 255).astype(np.uint8))
+        return output_path
 
     def adjust_gamma(self, src_img_path, gamma=0.5):
         src_img = cv2.imread(src_img_path)
