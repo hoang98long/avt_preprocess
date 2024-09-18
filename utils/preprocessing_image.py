@@ -9,7 +9,6 @@ from shapely.geometry import Polygon
 from shapely.geometry.polygon import orient
 import numpy as np
 from rasterio.enums import Resampling
-from PIL import Image
 
 
 def normalize_band(band):
@@ -216,28 +215,19 @@ class Preprocessing_Image:
 
     def image_format_convert(self, tiff_path, output_path, polygon_coords, selected_channels, new_resolution, output_formats):
         with rasterio.open(tiff_path) as src:
-            # Bước 2: Chuyển đổi tọa độ của đa giác sang định dạng của ảnh TIFF nếu cần
             polygon = Polygon(polygon_coords)
-
-            # Sắp xếp lại các điểm trong đa giác theo thứ tự không cắt chéo
             oriented_polygon = orient(polygon, sign=1.0)
-
-            # Bước 3: Cắt ảnh TIFF theo đa giác
             out_image, out_transform = mask(src, [oriented_polygon], crop=True)
-            out_meta = src.meta.copy()
-
-            # Bước 4: Thay đổi độ phân giải
             original_width = out_image.shape[2]
             original_height = out_image.shape[1]
             new_width = int(original_width * new_resolution)
             new_height = int(original_height * new_resolution)
 
-            # Thay đổi kích thước của từng kênh
             resized_channels = []
             for i in selected_channels:
                 resized_channel = np.empty((new_height, new_width), dtype=out_image.dtype)
                 rasterio.warp.reproject(
-                    out_image[i - 1],  # Chọn kênh theo chỉ số đã cho (kênh bắt đầu từ 0)
+                    out_image[i - 1],
                     resized_channel,
                     src_transform=out_transform,
                     src_crs=src.crs,
@@ -250,28 +240,32 @@ class Preprocessing_Image:
             merged_image = np.stack(resized_channels, axis=0)
             for output_format in output_formats:
                 if output_format in ['png', 'jpg']:
-                    output_path = output_path + "." + output_format
-                    merged_image_8bit = (merged_image / merged_image.max() * 255).astype(np.uint8)
-                    image_pil = Image.fromarray(np.moveaxis(merged_image_8bit, 0,
-                                                            -1))
-                    image_pil.save(output_path, format=output_format.upper())
+                    merged_image_save = np.moveaxis(merged_image, 0, -1)
+                    merged_image_save = cv2.cvtColor(merged_image_save, cv2.COLOR_RGBA2BGR)
+                    output_path_save = output_path + "." + output_format
+                    if merged_image_save.dtype == np.float32 or merged_image_save.dtype == np.float64:
+                        # Chuyển đổi dữ liệu từ float về int nếu cần
+                        merged_image_save = (merged_image_save * 255).astype(np.uint8)
+                    cv2.imwrite(output_path_save, merged_image_save)
 
                 elif output_format in ['8_bit']:
-                    output_path = output_path + "_8_bit.tif"
+                    output_path_save = output_path + "_8_bit.tif"
                     merged_image_8bit = (merged_image / merged_image.max() * 255).astype(np.uint8)
+                    out_meta = src.meta.copy()
                     out_meta.update({"dtype": 'uint8', "driver": "GTiff"})
-                    with rasterio.open(output_path, "w", **out_meta) as dest:
+                    with rasterio.open(output_path_save, "w", **out_meta) as dest:
                         dest.write(merged_image_8bit)
 
                 elif output_format in ['16_bit']:
-                    output_path = output_path + "_16_bit.tif"
+                    output_path_save = output_path + "_16_bit.tif"
                     merged_image_16bit = (merged_image / merged_image.max() * 65535).astype(np.uint16)
+                    out_meta = src.meta.copy()
                     out_meta.update({"dtype": 'uint16', "driver": "GTiff"})
-                    with rasterio.open(output_path, "w", **out_meta) as dest:
+                    with rasterio.open(output_path_save, "w", **out_meta) as dest:
                         dest.write(merged_image_16bit)
-
                 else:
-                    output_path = output_path + ".tif"
+                    output_path_save = output_path + ".tif"
+                    out_meta = src.meta.copy()
                     out_meta.update({
                         "driver": "GTiff",
                         "height": new_height,
@@ -279,7 +273,7 @@ class Preprocessing_Image:
                         "transform": out_transform,
                         "count": len(selected_channels)
                     })
-                    with rasterio.open(output_path, "w", **out_meta) as dest:
+                    with rasterio.open(output_path_save, "w", **out_meta) as dest:
                         dest.write(merged_image)
 
     def sharpen_image(self, ORG_image_path, PAN_image_path):

@@ -32,7 +32,7 @@ if __name__ == "__main__":
         task_type = 2
         config_data = json.load(open(args.config_file))
         list_task = get_task_id_list(task_type)
-        print(list_task)
+        # print(list_task)
         if len(list_task) > 0:
             for task_id in list_task:
                 preprocessing = Preprocessing()

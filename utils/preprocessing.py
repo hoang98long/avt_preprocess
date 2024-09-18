@@ -318,10 +318,11 @@ class Preprocessing:
 
     def image_format_convert(self, conn, id, task_param, ftp):
         input_file = task_param['input_file']
-        polygon_coords = task_param['polygon']
-        selected_channels = task_param['selected_channels']
-        new_resolution = float(task_param['resolution'])
-        output_formats = task_param['output_formats']
+        polygon = task_param['polygon']
+        polygon_coords = ast.literal_eval(polygon)[0]
+        selected_channels = ast.literal_eval(task_param['selected_channels'])
+        new_resolution = float(task_param['new_resolution'])
+        output_formats = ast.literal_eval(task_param['output_formats'])
         try:
             filename = input_file.split("/")[-1]
             local_file_path = LOCAL_SRC_FORMAT_CONVERT_PATH + filename
