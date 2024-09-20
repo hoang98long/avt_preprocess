@@ -29,21 +29,29 @@ class Preprocessing_Image:
     def __init__(self):
         pass
 
-    def enhance_image(self, input_tiff, output_tiff, ALPHA, BETA, KERNEL):
-        SHARPEN_KERNEL = np.array([[-1, -1, -1],
-                                   [-1, KERNEL, -1],
-                                   [-1, -1, -1]])
-        with rasterio.open(input_tiff) as src:
-            profile = src.profile
-            image_data = src.read()
-            processed_data = np.zeros_like(image_data)
-            for i in range(image_data.shape[0]):
-                sharpened_image = cv2.filter2D(image_data[i], -1, SHARPEN_KERNEL)
-                contrast_image = cv2.convertScaleAbs(sharpened_image, alpha=ALPHA, beta=BETA)
-                processed_data[i] = cv2.equalizeHist(contrast_image)
-
-            with rasterio.open(output_tiff, 'w', **profile) as dst:
-                dst.write(processed_data)
+    def enhance_image(self, input_path, output_path, ALPHA, BETA, SHARPEN_KERNEL):
+        SHARPEN_KERNEL = np.array([[0, -1, 0],
+                                   [-1, 5, -1],
+                                   [0, -1, 0]])
+        with rasterio.open(input_path) as src:
+            img = src.read([1, 2, 3])
+        img = np.transpose(img, (1, 2, 0))
+        img = img.astype(np.uint8)
+        img = cv2.convertScaleAbs(img, alpha=ALPHA, beta=BETA)
+        img = cv2.filter2D(img, -1, SHARPEN_KERNEL)
+        img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+        img_hsv[:, :, 2] = cv2.equalizeHist(img_hsv[:, :, 2])
+        img_result = cv2.cvtColor(img_hsv, cv2.COLOR_HSV2RGB)
+        img_result = np.transpose(img_result, (2, 0, 1))
+        with rasterio.open(
+                output_path, 'w',
+                driver='GTiff',
+                height=img_result.shape[1],
+                width=img_result.shape[2],
+                count=3,  # Số lượng kênh
+                dtype=img_result.dtype
+        ) as dst:
+            dst.write(img_result)
 
     def band_check(self, tiff_image_path):
         with rasterio.open(tiff_image_path) as src:
