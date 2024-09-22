@@ -35,6 +35,7 @@ class Preprocessing_Image:
                                    [0, -1, 0]])
         with rasterio.open(input_path) as src:
             img = src.read([1, 2, 3])
+            metadata = src.meta
         img = np.transpose(img, (1, 2, 0))
         img = img.astype(np.uint8)
         img = cv2.convertScaleAbs(img, alpha=ALPHA, beta=BETA)
@@ -43,14 +44,14 @@ class Preprocessing_Image:
         img_hsv[:, :, 2] = cv2.equalizeHist(img_hsv[:, :, 2])
         img_result = cv2.cvtColor(img_hsv, cv2.COLOR_HSV2RGB)
         img_result = np.transpose(img_result, (2, 0, 1))
-        with rasterio.open(
-                output_path, 'w',
-                driver='GTiff',
-                height=img_result.shape[1],
-                width=img_result.shape[2],
-                count=3,  # Số lượng kênh
-                dtype=img_result.dtype
-        ) as dst:
+        metadata.update({
+            'driver': 'GTiff',
+            'height': img_result.shape[1],
+            'width': img_result.shape[2],
+            'count': img_result.shape[0],  # Số kênh
+            'dtype': img_result.dtype
+        })
+        with rasterio.open(output_path, 'w', **metadata) as dst:
             dst.write(img_result)
 
     def band_check(self, tiff_image_path):
@@ -64,6 +65,8 @@ class Preprocessing_Image:
             rgb_channels = channels[:-1]
 
             # Detect if there are identical channels
+            if len(channels) < 4:
+                return False
             for i in range(len(channels)):
                 for j in range(i + 1, len(channels)):
                     if np.array_equal(channels[i], channels[j]):

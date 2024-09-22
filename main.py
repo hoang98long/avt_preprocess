@@ -17,10 +17,11 @@ def get_task_id_list(task_type):
     cursor = conn.cursor()
     cursor.execute('SET search_path TO public')
     cursor.execute("SELECT current_schema()")
-    cursor.execute("SELECT id FROM avt_task WHERE task_type = %s and task_stat < 0 ORDER BY task_stat DESC",
-                   (task_type,))
+    cursor.execute(
+        "SELECT id, creator, task_id_ref FROM avt_task WHERE task_type = %s and task_stat < 0 ORDER BY task_stat DESC",
+        (task_type,))
     result = cursor.fetchall()
-    return [res[0] for res in result]
+    return [[res[0], res[1], res[2]] for res in result]
 
 
 if __name__ == "__main__":
@@ -32,9 +33,16 @@ if __name__ == "__main__":
         task_type = 2
         config_data = json.load(open(args.config_file))
         list_task = get_task_id_list(task_type)
-        # print(list_task)
+        print(list_task)
         if len(list_task) > 0:
-            for task_id in list_task:
-                preprocessing = Preprocessing()
-                preprocessing.process(task_id, config_data)
+            for task_id, creator, task_id_ref in list_task:
+                if creator == "system":
+                    if task_id_ref == 0 or task_id_ref is None:
+                        preprocessing = Preprocessing()
+                        preprocessing.automatic_process(task_id, config_data)
+                    else:
+                        pass
+                else:
+                    preprocessing = Preprocessing()
+                    preprocessing.process(task_id, config_data)
         time.sleep(5)

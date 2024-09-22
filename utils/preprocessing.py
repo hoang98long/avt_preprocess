@@ -146,7 +146,63 @@ class Preprocessing:
             if epsg_code == 0:
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 0 AND task_message = 'EPSG ERROR' WHERE id = %s", (id,))
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Khong dung dinh dang anh tiff', "
+                               "updated_at = %s WHERE id = %s", (get_time(), id,))
+                conn.commit()
+                return False
+            elif epsg_code != 4326:
+                converted_input_files_local = local_file_path.split(".")[0] + "_4326.tif"
+                convert_epsg_4326(local_file_path, converted_input_files_local)
+                local_file_path = converted_input_files_local
+            date_create = get_time_string()
+            output_image_name = "result_enhance_" + format(date_create) + ".tif"
+            output_path = os.path.join(LOCAL_RESULT_ENHANCE_IMAGE_PATH, output_image_name)
+            preprocess_image = Preprocessing_Image()
+            preprocess_image.enhance_image(local_file_path, output_path, do_tuong_phan, do_sang, do_net)
+            result_image_name = output_path.split("/")[-1]
+            ftp_dir = FTP_ENHANCE_IMAGE_PATH
+            ftp.cwd(str(ftp_dir))
+            save_dir = ftp_dir + "/" + result_image_name
+            task_output = str({
+                "output_image": [save_dir]
+            }).replace("'", "\"")
+            with open(output_path, "rb") as file:
+                ftp.storbinary(f"STOR {save_dir}", file)
+            ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            # owner_group = 'avtadmin:avtadmin'
+            # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+            # ftp.sendcmd(chown_command)
+            # print("Connection closed")
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
+                           (task_output, get_time(), id,))
+            conn.commit()
+            return True
+        except ftplib.all_errors as e:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
+            conn.commit()
+            # print(f"FTP error: {e}")
+            return False
+
+    def automatic_enhance_image(self, conn, id, task_param, ftp):
+        input_file = task_param['input_file']
+        do_tuong_phan = 1.5
+        do_sang = 0
+        do_net = 9
+        try:
+            filename = input_file.split("/")[-1]
+            local_file_path = os.path.join(LOCAL_SRC_ENHANCE_IMAGE_PATH, filename)
+            if not os.path.isfile(local_file_path):
+                download_file(ftp, input_file, local_file_path)
+            epsg_code = check_epsg_code(local_file_path)
+            if epsg_code == 0:
+                cursor = conn.cursor()
+                route_to_db(cursor)
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Khong dung dinh dang anh tiff', "
+                               "updated_at = %s WHERE id = %s", (get_time(), id,))
                 conn.commit()
                 return False
             elif epsg_code != 4326:
@@ -198,7 +254,8 @@ class Preprocessing:
             if epsg_code == 0:
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 0 AND task_message = 'EPSG ERROR' WHERE id = %s", (id,))
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Khong dung dinh dang anh tiff EPSG',"
+                               "updated_at = %s WHERE id = %s", (get_time(), id))
                 conn.commit()
                 return False
             elif epsg_code != 4326:
@@ -215,7 +272,7 @@ class Preprocessing:
                     cursor = conn.cursor()
                     route_to_db(cursor)
                     cursor.execute(
-                        "UPDATE avt_task SET task_stat = 0 AND task_output = 'Can them anh IR' WHERE id = %s", (id,))
+                        "UPDATE avt_task SET task_stat = 0 AND task_message = 'Can them anh IR' WHERE id = %s", (id,))
                     conn.commit()
                     return False
                 else:
@@ -257,6 +314,7 @@ class Preprocessing:
 
     def merge_channel(self, conn, id, task_param, ftp):
         input_file = task_param['input_file']
+        # print(input_file)
         selected_channels = ast.literal_eval(task_param['selected_channels'])
         try:
             filename = input_file.split("/")[-1]
@@ -264,10 +322,12 @@ class Preprocessing:
             if not os.path.isfile(local_file_path):
                 download_file(ftp, input_file, local_file_path)
             epsg_code = check_epsg_code(local_file_path)
+            # print(epsg_code)
             if epsg_code == 0:
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 0 AND task_message = 'EPSG ERROR' WHERE id = %s", (id,))
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Khong dung dinh dang anh tiff EPSG',"
+                               "updated_at = %s WHERE id = %s", (get_time(), id))
                 conn.commit()
                 return False
             elif epsg_code != 4326:
@@ -279,12 +339,11 @@ class Preprocessing:
             output_path = os.path.join(LOCAL_RESULT_MERGE_CHANNEL_PATH, output_image_name)
             preprocess_image = Preprocessing_Image()
             channel_check = preprocess_image.band_check(local_file_path)
-            print(channel_check)
             if not channel_check:
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute(
-                    "UPDATE avt_task SET task_stat = 0 AND task_message = 'Chua du kenh pho' WHERE id = %s", (id,))
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Chua du kenh pho', updated_at = %s "
+                               "WHERE id = %s", (get_time(), id,))
                 conn.commit()
                 return False
             else:
@@ -627,7 +686,8 @@ class Preprocessing:
             if epsg_code == 0:
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 0 AND task_message = 'EPSG ERROR' WHERE id = %s", (id,))
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Khong dung dinh dang anh tiff EPSG',"
+                               "updated_at = %s WHERE id = %s", (get_time(), id))
                 conn.commit()
                 return False
             elif epsg_code != 4326:
@@ -706,6 +766,39 @@ class Preprocessing:
                 return_flag = preprocess.image_format_convert(conn, id, task_param, ftp)
             elif algorithm == "nang_cao_chat_luong":
                 return_flag = preprocess.enhance_image(conn, id, task_param, ftp)
+            cursor.close()
+            if return_flag:
+                task_stat_value_holder['value'] = 1
+            else:
+                task_stat_value_holder['value'] = 0
+        except Exception as e:
+            task_stat_value_holder['value'] = 0
+        stop_event.set()
+        update_database(id, task_stat_value_holder['value'], conn)
+        checker_thread.join()
+
+    def automatic_process(self, id, config_data):
+        conn = psycopg2.connect(
+            dbname=config_data['database']['database'],
+            user=config_data['database']['user'],
+            password=config_data['database']['password'],
+            host=config_data['database']['host'],
+            port=config_data['database']['port']
+        )
+        task_stat_value_holder = {'value': 2}
+        stop_event = threading.Event()
+        checker_thread = threading.Thread(target=check_and_update, args=(id, task_stat_value_holder, conn, stop_event))
+        checker_thread.start()
+        try:
+            cursor = conn.cursor()
+            cursor.execute('SET search_path TO public')
+            cursor.execute("SELECT current_schema()")
+            cursor.execute("SELECT task_param FROM avt_task WHERE id = %s", (id,))
+            result = cursor.fetchone()
+            preprocess = Preprocessing()
+            task_param = json.loads(result[0])
+            ftp = connect_ftp(config_data)
+            return_flag = preprocess.automatic_enhance_image(conn, id, task_param, ftp)
             cursor.close()
             if return_flag:
                 task_stat_value_holder['value'] = 1
