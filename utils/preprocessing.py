@@ -133,10 +133,21 @@ class Preprocessing:
         pass
 
     def enhance_image(self, conn, id, task_param, ftp):
-        input_file = task_param['input_file']
-        do_tuong_phan = float(task_param['do_tuong_phan'])
-        do_sang = int(task_param['do_sang'])
-        do_net = int(task_param['do_net'])
+        input_file = task_param['input_file'][0]
+        print(input_file)
+        do_tuong_phan = task_param['do_tuong_phan']
+        do_sang = task_param['do_sang']
+        do_net = task_param['do_net']
+        if do_tuong_phan == '':
+            do_tuong_phan = 1.5
+        elif do_sang == '':
+            do_sang = 0
+        elif do_net == '':
+            do_net = 5
+        else:
+            do_tuong_phan = float(do_tuong_phan)
+            do_sang = int(do_sang)
+            do_net = int(do_net)
         try:
             filename = input_file.split("/")[-1]
             local_file_path = os.path.join(LOCAL_SRC_ENHANCE_IMAGE_PATH, filename)
@@ -188,7 +199,7 @@ class Preprocessing:
             return False
 
     def automatic_enhance_image(self, conn, id, task_param, ftp):
-        input_file = task_param['input_file']
+        input_file = task_param['input_file'][0]
         do_tuong_phan = 1.5
         do_sang = 0
         do_net = 9
@@ -243,8 +254,8 @@ class Preprocessing:
             return False
 
     def check_and_merge_ir(self, conn, id, task_param, ftp):
-        input_file = task_param['input_file']
-        input_file_ir = task_param['input_file_ir']
+        input_file = task_param['input_file'][0]
+        input_file_ir = task_param['input_file_ir'][0]
         try:
             filename = input_file.split("/")[-1]
             local_file_path = os.path.join(LOCAL_SRC_MERGE_IR_PATH, filename)
@@ -313,8 +324,7 @@ class Preprocessing:
             return False
 
     def merge_channel(self, conn, id, task_param, ftp):
-        input_file = task_param['input_file']
-        # print(input_file)
+        input_file = task_param['input_file'][0]
         selected_channels = ast.literal_eval(task_param['selected_channels'])
         try:
             filename = input_file.split("/")[-1]
@@ -383,7 +393,7 @@ class Preprocessing:
             return False
 
     def image_format_convert(self, conn, id, task_param, ftp):
-        input_file = task_param['input_file']
+        input_file = task_param['input_file'][0]
         polygon = task_param['polygon']
         polygon_coords = ast.literal_eval(polygon)[0]
         selected_channels = ast.literal_eval(task_param['selected_channels'])
@@ -469,7 +479,7 @@ class Preprocessing:
             return False
 
     # def image_format_convert(self, conn, id, task_param, ftp):
-    #     input_file = task_param['input_file']
+    #     input_file = task_param['input_file'][0]
     #     single_bands = task_param['single_bands']
     #     single_bands = ast.literal_eval(single_bands)
     #     multi_bands = task_param['multi_bands']
@@ -522,7 +532,7 @@ class Preprocessing:
     #         return False
 
     # def image_format_convert(self, conn, id, task_param, ftp):
-    #     input_file = task_param['input_file']
+    #     input_file = task_param['input_file'][0]
     #     try:
     #         filename = input_file.split("/")[-1]
     #         local_file_path = LOCAL_SRC_FORMAT_CONVERT_PATH + filename
@@ -564,8 +574,8 @@ class Preprocessing:
     #         return False
 
     def sharpen_image(self, conn, id, task_param, ftp):
-        ORG_input_file = task_param['input_file']
-        PAN_input_file = task_param['input_file_single_band']
+        ORG_input_file = task_param['input_file'][0]
+        PAN_input_file = task_param['input_file_single_band'][0]
         try:
             org_filename = ORG_input_file.split("/")[-1]
             local_org_file_path = LOCAL_SRC_SHARPEN_IMAGE_PATH + org_filename
@@ -606,7 +616,7 @@ class Preprocessing:
             return False
 
     def adjust_gamma(self, conn, id, task_param, ftp):
-        src_img_path = task_param['input_file']
+        src_img_path = task_param['input_file'][0]
         gamma = task_param['gamma']
         try:
             filename = src_img_path.split("/")[-1]
@@ -644,7 +654,7 @@ class Preprocessing:
             return False
 
     def equalize_hist(self, conn, id, task_param, ftp):
-        src_img_path = task_param['input_file']
+        src_img_path = task_param['input_file'][0]
         mode = task_param['mode']
         tileGridSize = task_param['tileGridSize']
         try:
@@ -683,7 +693,7 @@ class Preprocessing:
             return False
 
     def illumination_correct(self, conn, id, task_param, ftp):
-        input_file = task_param['input_file']
+        input_file = task_param['input_file'][0]
         try:
             filename = input_file.split("/")[-1]
             local_file_path = os.path.join(LOCAL_SRC_ILLUM_CORRECT_IMAGE_PATH, filename)
