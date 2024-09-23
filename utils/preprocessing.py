@@ -350,8 +350,7 @@ class Preprocessing:
                 cursor = conn.cursor()
                 route_to_db(cursor)
                 cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Kênh phổ hồng ngoại bị lặp từ kênh "
-                               "ảnh', updated_at = %s"
-                               "WHERE id = %s", (get_time(), id,))
+                               "ảnh', updated_at = %s WHERE id = %s", (get_time(), id,))
                 conn.commit()
                 return False
             else:
