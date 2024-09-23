@@ -56,43 +56,27 @@ class Preprocessing_Image:
 
     def band_check(self, tiff_image_path):
         with rasterio.open(tiff_image_path) as src:
-            # Read the channels
             channels = [src.read(i + 1) for i in range(src.count)]
-            # print(len(channels))
-
-            # Check if there are 4 channels (including IR)
             ir_channel = channels[-1]
             rgb_channels = channels[:-1]
-
-            # Detect if there are identical channels
             if len(channels) < 4:
-                return False
+                return 1  # Thiếu kênh phổ
             for i in range(len(channels)):
                 for j in range(i + 1, len(channels)):
                     if np.array_equal(channels[i], channels[j]):
-                        return False
-        return True
+                        return 2  # Có trùng lặp kênh phổ
+        return 0  # Đủ kênh phổ
 
     def preprocess_no_ir(self, tiff_image_path, output_path):
         with rasterio.open(tiff_image_path) as src:
-            # Read the channels
             channels = [src.read(i + 1) for i in range(src.count)]
-            # print(len(channels))
-
-            # Check if there are 4 channels (including IR)
             ir_channel = channels[-1]
             rgb_channels = channels[:-1]
-
-            # Detect if there are identical channels
             for i in range(len(channels)):
                 for j in range(i + 1, len(channels)):
                     if np.array_equal(channels[i], channels[j]):
                         return False
-
-            # Combine channels into a 4-channel array (RGB first, IR last)
             combined_image = np.stack(rgb_channels + [ir_channel])
-
-            # Write the combined image to a new TIFF file
             with rasterio.open(
                     output_path, 'w',
                     driver='GTiff',
@@ -103,28 +87,20 @@ class Preprocessing_Image:
             ) as dst:
                 for i in range(4):
                     dst.write(combined_image[i], i + 1)
-
         return True
 
     def preprocess_ir(self, tiff_image_path, tiff_image_ir_path, output_path):
         check_channel = False
         with rasterio.open(tiff_image_path) as src:
-            # Read the channels
             channels = [src.read(i + 1) for i in range(src.count)]
             if len(channels) == 3:
                 check_channel = True
         if not check_channel:
             with rasterio.open(tiff_image_path) as src_4ch:
-                rgb_channels = src_4ch.read([1, 2, 3])  # Read the first 3 channels (RGB)
-
-            # Open the IR image
+                rgb_channels = src_4ch.read([1, 2, 3])
             with rasterio.open(tiff_image_ir_path) as src_ir:
-                ir_channel = src_ir.read(1)  # Assuming IR image has a single channel
-
-            # Stack the RGB channels and the IR channel to create a 4-channel image
+                ir_channel = src_ir.read(1)
             combined_image = np.vstack((rgb_channels, np.expand_dims(ir_channel, axis=0)))
-
-            # Write the combined image to a new 4-channel TIFF file
             with rasterio.open(
                     output_path, 'w',
                     driver='GTiff',
@@ -138,15 +114,9 @@ class Preprocessing_Image:
         else:
             with rasterio.open(tiff_image_path) as src_rgb:
                 rgb_channels = src_rgb.read()
-
-            # Open the IR image
             with rasterio.open(tiff_image_ir_path) as src_ir:
-                ir_channel = src_ir.read(1)  # Assuming IR image has a single channel
-
-            # Stack the RGB channels and the IR channel to create a 4-channel image
+                ir_channel = src_ir.read(1)
             combined_image = np.vstack((rgb_channels, np.expand_dims(ir_channel, axis=0)))
-
-            # Write the combined image to a new 4-channel TIFF file
             with rasterio.open(
                     output_path, 'w',
                     driver='GTiff',
@@ -163,7 +133,6 @@ class Preprocessing_Image:
         # print(selected_channels)
         with rasterio.open(input_tiff) as src:
             selected_data = src.read(selected_channels)
-
             output_meta = src.meta.copy()
             output_meta.update({
                 'count': len(selected_channels),  # Số kênh đầu ra

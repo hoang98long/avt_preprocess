@@ -182,7 +182,7 @@ class Preprocessing:
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Lỗi đầu vào' WHERE id = %s", (id,))
             conn.commit()
             # print(f"FTP error: {e}")
             return False
@@ -201,7 +201,7 @@ class Preprocessing:
             if epsg_code == 0:
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Khong dung dinh dang anh tiff', "
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Không đúng định dạng ảnh tiff EPSG',"
                                "updated_at = %s WHERE id = %s", (get_time(), id,))
                 conn.commit()
                 return False
@@ -237,7 +237,7 @@ class Preprocessing:
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Lỗi đầu vào' WHERE id = %s", (id,))
             conn.commit()
             # print(f"FTP error: {e}")
             return False
@@ -254,7 +254,7 @@ class Preprocessing:
             if epsg_code == 0:
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Khong dung dinh dang anh tiff EPSG',"
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Không đúng định dạng ảnh tiff EPSG',"
                                "updated_at = %s WHERE id = %s", (get_time(), id))
                 conn.commit()
                 return False
@@ -307,7 +307,7 @@ class Preprocessing:
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Lỗi đầu vào' WHERE id = %s", (id,))
             conn.commit()
             # print(f"FTP error: {e}")
             return False
@@ -326,7 +326,7 @@ class Preprocessing:
             if epsg_code == 0:
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Khong dung dinh dang anh tiff EPSG',"
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Không đúng định dạng ảnh tiff',"
                                "updated_at = %s WHERE id = %s", (get_time(), id))
                 conn.commit()
                 return False
@@ -339,10 +339,18 @@ class Preprocessing:
             output_path = os.path.join(LOCAL_RESULT_MERGE_CHANNEL_PATH, output_image_name)
             preprocess_image = Preprocessing_Image()
             channel_check = preprocess_image.band_check(local_file_path)
-            if not channel_check:
+            if channel_check == 1:
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Chua du kenh pho', updated_at = %s "
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Chưa đủ kênh phổ', updated_at = %s "
+                               "WHERE id = %s", (get_time(), id,))
+                conn.commit()
+                return False
+            elif channel_check == 2:
+                cursor = conn.cursor()
+                route_to_db(cursor)
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Kênh phổ hồng ngoại bị lặp từ kênh "
+                               "ảnh', updated_at = %s"
                                "WHERE id = %s", (get_time(), id,))
                 conn.commit()
                 return False
@@ -370,7 +378,7 @@ class Preprocessing:
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Lỗi đầu vào' WHERE id = %s", (id,))
             conn.commit()
             # print(f"FTP error: {e}")
             return False
@@ -456,7 +464,7 @@ class Preprocessing:
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Lỗi đầu vào' WHERE id = %s", (id,))
             conn.commit()
             # print(f"FTP error: {e}")
             return False
@@ -593,7 +601,7 @@ class Preprocessing:
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Lỗi đầu vào' WHERE id = %s", (id,))
             conn.commit()
             # print(f"FTP error: {e}")
             return False
@@ -631,7 +639,7 @@ class Preprocessing:
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Lỗi đầu vào' WHERE id = %s", (id,))
             conn.commit()
             # print(f"FTP error: {e}")
             return False
@@ -670,7 +678,7 @@ class Preprocessing:
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Lỗi đầu vào' WHERE id = %s", (id,))
             conn.commit()
             # print(f"FTP error: {e}")
             return False
@@ -722,7 +730,7 @@ class Preprocessing:
         except ftplib.all_errors as e:
             cursor = conn.cursor()
             route_to_db(cursor)
-            cursor.execute("UPDATE avt_task SET task_stat = 0 WHERE id = %s", (id,))
+            cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Lỗi đầu vào' WHERE id = %s", (id,))
             conn.commit()
             # print(f"FTP error: {e}")
             return False
