@@ -3,3 +3,4 @@ opencv_python
 psycopg2_binary
 tifffile
 shapely
+schedule==1.2.2

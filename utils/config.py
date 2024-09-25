@@ -36,3 +36,19 @@ LOCAL_RESULT_EQUALIZE_IMAGE_PATH = 'images/equalize_image/result/'
 
 LOCAL_SRC_ILLUM_CORRECT_IMAGE_PATH = 'images/illum_correct_image/source/'
 LOCAL_RESULT_ILLUM_CORRECT_IMAGE_PATH = 'images/illum_correct_image/result/'
+
+LOCAL_SRC_PHYSICAL_CORRECTION_IMAGE_PATH = 'images/physical_correction_image/source/'
+LOCAL_RESULT_PHYSICAL_CORRECTION_IMAGE_PATH = 'images/physical_correction_image/result/'
+
+LOCAL_SRC_RADIOMETRIC_CORRECTION_IMAGE_PATH = 'images/radiometric_correction_image/source/'
+LOCAL_RESULT_RADIOMETRIC_CORRECTION_IMAGE_PATH = 'images/radiometric_correction_image/result/'
+LOCAL_RADIOMETRIC_CORRECTION_REFERENCE_IMAGE_PATH = 'images/radiometric_correction_image/reference_images/'
+
+LOCAL_SRC_GEOMETRIC_CORRECTION_IMAGE_PATH = 'images/geometric_correction_image/source/'
+LOCAL_RESULT_GEOMETRIC_CORRECTION_IMAGE_PATH = 'images/geometric_correction_image/result/'
+
+LOCAL_SRC_GCP_CORRECTION_IMAGE_PATH = 'images/gcp_correction_image/source/'
+LOCAL_RESULT_GCP_CORRECTION_IMAGE_PATH = 'images/gcp_correction_image/result/'
+
+LOCAL_SRC_DEM_CORRECTION_IMAGE_PATH = 'images/dem_correction_image/source/'
+LOCAL_RESULT_DEM_CORRECTION_IMAGE_PATH = 'images/dem_correction_image/result/'

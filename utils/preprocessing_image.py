@@ -9,6 +9,8 @@ from shapely.geometry import Polygon
 from shapely.geometry.polygon import orient
 import numpy as np
 from rasterio.enums import Resampling
+from scipy.optimize import least_squares
+from skimage.exposure import match_histograms
 
 
 def normalize_band(band):
@@ -23,6 +25,37 @@ def get_time_string():
     current_datetime = (str(now.year) + "_" + str(now.month) + "_" + str(now.day) + "_"
                         + str(now.hour) + "_" + str(now.minute) + "_" + str(now.second))
     return current_datetime
+
+
+def residuals(params, src_points, dst_points):
+    transformed_points = polynomial_transform(params, src_points)
+    return (transformed_points - dst_points).ravel()
+
+
+def polynomial_transform(params, src_points):
+    a0, a1, a2, b0, b1, b2 = params
+    x = src_points[:, 0]
+    y = src_points[:, 1]
+    x_new = a0 + a1 * x + a2 * y
+    y_new = b0 + b1 * x + b2 * y
+    return np.column_stack((x_new, y_new))
+
+
+def transform_image(img, params):
+    a0, a1, a2, b0, b1, b2 = params
+    rows, cols = img.shape
+    map_x = np.zeros((rows, cols), dtype=np.float32)
+    map_y = np.zeros((rows, cols), dtype=np.float32)
+
+    for y in range(rows):
+        for x in range(cols):
+            new_x = a0 + a1 * x + a2 * y
+            new_y = b0 + b1 * x + b2 * y
+            map_x[y, x] = new_x
+            map_y[y, x] = new_y
+
+    corrected_img = cv2.remap(img, map_x, map_y, cv2.INTER_LINEAR)
+    return corrected_img
 
 
 class Preprocessing_Image:
@@ -193,7 +226,8 @@ class Preprocessing_Image:
     #             convert_to_tiff(tiff_image_path, image_name_output, bands_stack)
     #     return result_image_path
 
-    def image_format_convert(self, tiff_path, output_path, polygon_coords, selected_channels, new_resolution, output_formats):
+    def image_format_convert(self, tiff_path, output_path, polygon_coords, selected_channels, new_resolution,
+                             output_formats):
         with rasterio.open(tiff_path) as src:
             polygon = Polygon(polygon_coords)
             oriented_polygon = orient(polygon, sign=1.0)
@@ -371,3 +405,88 @@ class Preprocessing_Image:
             elif image_type == "jpg":
                 cv2.imwrite(result_image_path + ".jpg", input_image)
         return result_image_path
+
+    def physical_error_correction(self, input_path, output_path):
+        return 0
+
+    def radiometric_correction(self, input_path, output_path, png_paths):
+        with rasterio.open(input_path) as tiff_src:
+            tiff_img = tiff_src.read()
+            profile = tiff_src.profile
+        rgb_channels = tiff_img[:3]
+        ir_channel = tiff_img[3]
+        png_histograms = []
+        for png_path in png_paths:
+            png_img = cv2.imread(png_path)
+            png_histograms.append(png_img)
+        png_histograms = np.array(png_histograms)
+        median_histogram = np.median(png_histograms, axis=0).astype(np.uint8)
+        adjusted_rgb = np.zeros_like(rgb_channels, dtype=np.uint8)
+        for channel in range(3):
+            adjusted_rgb[channel] = match_histograms(rgb_channels[channel], median_histogram[:, :, channel])
+        adjusted_tiff = np.vstack((adjusted_rgb, np.expand_dims(ir_channel, axis=0)))
+        with rasterio.open(output_path, 'w', **profile) as tiff_dst:
+            tiff_dst.write(adjusted_tiff)
+
+    def geometric_correction(self, input_path, output_path, src_points, dst_points):
+        src_points = np.array(src_points, dtype=np.float32)
+        dst_points = np.array(dst_points, dtype=np.float32)
+        initial_guess = np.zeros(6)
+        result = least_squares(residuals, initial_guess, args=(src_points, dst_points))
+        params = result.x
+        with rasterio.open(input_path) as src:
+            num_channels = src.count
+            height, width = src.height, src.width
+            crs = src.crs
+            transform = src.transform
+            channels = []
+            for i in range(1, num_channels + 1):
+                channel_data = src.read(i)
+                corrected_channel = transform_image(channel_data, params)
+                channels.append(corrected_channel)
+        corrected_image = np.array(channels)
+        new_metadata = {
+            'driver': 'GTiff',
+            'count': num_channels,  #
+            'height': height,
+            'width': width,
+            'dtype': corrected_image.dtype,
+            'crs': crs,
+            'transform': transform
+        }
+
+        # Bước 3: Lưu ảnh TIFF với metadata mới
+        with rasterio.open(output_path, 'w', **new_metadata) as dst:
+            dst.write(corrected_image)
+
+    def gcp_correction(self, input_path, output_path, src_points, dst_points):
+        src_points = np.array(src_points, dtype=np.float32)
+        dst_points = np.array(dst_points, dtype=np.float32)
+        initial_guess = np.zeros(6)
+        result = least_squares(residuals, initial_guess, args=(src_points, dst_points))
+        params = result.x
+        with rasterio.open(input_path) as src:
+            num_channels = src.count
+            height, width = src.height, src.width
+            crs = src.crs
+            transform = src.transform
+            channels = []
+            for i in range(1, num_channels + 1):
+                channel_data = src.read(i)
+                corrected_channel = transform_image(channel_data, params)
+                channels.append(corrected_channel)
+        corrected_image = np.array(channels)
+        new_metadata = {
+            'driver': 'GTiff',
+            'count': num_channels,  #
+            'height': height,
+            'width': width,
+            'dtype': corrected_image.dtype,
+            'crs': crs,
+            'transform': transform
+        }
+        with rasterio.open(output_path, 'w', **new_metadata) as dst:
+            dst.write(corrected_image)
+
+    def dem_correction(self, input_path, output_path):
+        return 0

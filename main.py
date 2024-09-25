@@ -1,9 +1,10 @@
 import argparse
 import time
-
+import schedule
 from utils.preprocessing import Preprocessing
 import json
 import psycopg2
+import os
 
 
 def get_task_id_list(task_type):
@@ -24,11 +25,28 @@ def get_task_id_list(task_type):
     return [[res[0], res[1], res[2]] for res in result]
 
 
+def delete_files_with_prefix(directory, prefix='result_'):
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            if file.startswith(prefix):
+                file_path = os.path.join(root, file)
+                try:
+                    os.remove(file_path)
+                except Exception as e:
+                    pass
+
+
+def daily_cleanup():
+    directory = 'images/'
+    delete_files_with_prefix(directory)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # parser.add_argument('--avt_task_id', type=int, required=True, help='task id')
     parser.add_argument('--config_file', type=str, required=True, help='config file')
     args = parser.parse_args()
+    schedule.every(1).days.do(daily_cleanup)
     while True:
         task_type = 2
         config_data = json.load(open(args.config_file))
@@ -45,4 +63,5 @@ if __name__ == "__main__":
                 else:
                     preprocessing = Preprocessing()
                     preprocessing.process(task_id, config_data)
+        schedule.run_pending()
         time.sleep(5)

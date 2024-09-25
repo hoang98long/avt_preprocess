@@ -21,6 +21,11 @@ FTP_SHARPEN_IMAGE_PATH = ftp_directory['sharpen_image_result_directory']
 FTP_ADJUST_IMAGE_PATH = ftp_directory['adjust_image_result_directory']
 FTP_EQUALIZE_IMAGE_PATH = ftp_directory['equalize_image_result_directory']
 FTP_ILLUM_CORRECT_IMAGE_PATH = ftp_directory['illum_correct_result_directory']
+FTP_PHYSICAL_CORRECTION_IMAGE_PATH = ftp_directory['physical_error_correction_result_directory']
+FTP_RADIOMETRIC_CORRECTION_IMAGE_PATH = ftp_directory['radiometric_correct_result_directory']
+FTP_GEOMETRIC_CORRECTION_IMAGE_PATH = ftp_directory['geometric_correct_result_directory']
+FTP_GCP_CORRECTION_IMAGE_PATH = ftp_directory['gcp_correct_result_directory']
+FTP_DEM_CORRECTION_IMAGE_PATH = ftp_directory['dem_correct_result_directory']
 
 
 def connect_ftp(config_data):
@@ -744,6 +749,282 @@ class Preprocessing:
             # print(f"FTP error: {e}")
             return False
 
+    def physical_error_correction(self, conn, id, task_param, ftp):
+        input_file = task_param['input_file'][0]
+        try:
+            filename = input_file.split("/")[-1]
+            local_file_path = os.path.join(LOCAL_SRC_PHYSICAL_CORRECTION_IMAGE_PATH, filename)
+            if not os.path.isfile(local_file_path):
+                download_file(ftp, input_file, local_file_path)
+            epsg_code = check_epsg_code(local_file_path)
+            if epsg_code == 0:
+                cursor = conn.cursor()
+                route_to_db(cursor)
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Khong dung dinh dang anh tiff', "
+                               "updated_at = %s WHERE id = %s", (get_time(), id,))
+                conn.commit()
+                return False
+            elif epsg_code != 4326:
+                converted_input_files_local = local_file_path.split(".")[0] + "_4326.tif"
+                convert_epsg_4326(local_file_path, converted_input_files_local)
+                local_file_path = converted_input_files_local
+            date_create = get_time_string()
+            output_image_name = "result_physical_correction_" + format(date_create) + ".tif"
+            output_path = os.path.join(LOCAL_RESULT_PHYSICAL_CORRECTION_IMAGE_PATH, output_image_name)
+            preprocess_image = Preprocessing_Image()
+            preprocess_image.physical_error_correction(local_file_path, output_path,)
+            result_image_name = output_path.split("/")[-1]
+            ftp_dir = FTP_PHYSICAL_CORRECTION_IMAGE_PATH
+            ftp.cwd(str(ftp_dir))
+            save_dir = ftp_dir + "/" + result_image_name
+            task_output = str({
+                "output_image": [save_dir]
+            }).replace("'", "\"")
+            with open(output_path, "rb") as file:
+                ftp.storbinary(f"STOR {save_dir}", file)
+            ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            # owner_group = 'avtadmin:avtadmin'
+            # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+            # ftp.sendcmd(chown_command)
+            # print("Connection closed")
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
+                           (task_output, get_time(), id,))
+            conn.commit()
+            return True
+        except ftplib.all_errors as e:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Lỗi đầu vào' WHERE id = %s", (id,))
+            conn.commit()
+            # print(f"FTP error: {e}")
+            return False
+
+    def radiometric_correction(self, conn, id, task_param, ftp):
+        input_file = task_param['input_file'][0]
+        reference_images = task_param['reference_images_paths']
+        try:
+            reference_images_local = []
+            for reference_image in reference_images:
+                reference_image_name = reference_image.split("/")[-1]
+                local_reference_image_path = os.path.join(LOCAL_RADIOMETRIC_CORRECTION_REFERENCE_IMAGE_PATH, reference_image_name)
+                reference_images_local.append(local_reference_image_path)
+                if not os.path.isfile(local_reference_image_path):
+                    download_file(ftp, reference_image, local_reference_image_path)
+            filename = input_file.split("/")[-1]
+            local_file_path = os.path.join(LOCAL_SRC_RADIOMETRIC_CORRECTION_IMAGE_PATH, filename)
+            if not os.path.isfile(local_file_path):
+                download_file(ftp, input_file, local_file_path)
+            epsg_code = check_epsg_code(local_file_path)
+            if epsg_code == 0:
+                cursor = conn.cursor()
+                route_to_db(cursor)
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Khong dung dinh dang anh tiff', "
+                               "updated_at = %s WHERE id = %s", (get_time(), id,))
+                conn.commit()
+                return False
+            elif epsg_code != 4326:
+                converted_input_files_local = local_file_path.split(".")[0] + "_4326.tif"
+                convert_epsg_4326(local_file_path, converted_input_files_local)
+                local_file_path = converted_input_files_local
+            date_create = get_time_string()
+            output_image_name = "result_radiometric_correction_" + format(date_create) + ".tif"
+            output_path = os.path.join(LOCAL_RESULT_RADIOMETRIC_CORRECTION_IMAGE_PATH, output_image_name)
+            preprocess_image = Preprocessing_Image()
+            preprocess_image.radiometric_correction(local_file_path, output_path, reference_images_local)
+            result_image_name = output_path.split("/")[-1]
+            ftp_dir = FTP_RADIOMETRIC_CORRECTION_IMAGE_PATH
+            ftp.cwd(str(ftp_dir))
+            save_dir = ftp_dir + "/" + result_image_name
+            task_output = str({
+                "output_image": [save_dir]
+            }).replace("'", "\"")
+            with open(output_path, "rb") as file:
+                ftp.storbinary(f"STOR {save_dir}", file)
+            ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            # owner_group = 'avtadmin:avtadmin'
+            # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+            # ftp.sendcmd(chown_command)
+            # print("Connection closed")
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
+                           (task_output, get_time(), id,))
+            conn.commit()
+            return True
+        except ftplib.all_errors as e:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Lỗi đầu vào' WHERE id = %s", (id,))
+            conn.commit()
+            # print(f"FTP error: {e}")
+            return False
+
+    def geometric_correction(self, conn, id, task_param, ftp):
+        input_file = task_param['input_file'][0]
+        param = task_param['points']
+        param = ast.literal_eval(param)
+        src_points = [point[0] for point in param]
+        dst_points = [point[1] for point in param]
+        try:
+            filename = input_file.split("/")[-1]
+            local_file_path = os.path.join(LOCAL_SRC_GEOMETRIC_CORRECTION_IMAGE_PATH, filename)
+            if not os.path.isfile(local_file_path):
+                download_file(ftp, input_file, local_file_path)
+            epsg_code = check_epsg_code(local_file_path)
+            if epsg_code == 0:
+                cursor = conn.cursor()
+                route_to_db(cursor)
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Khong dung dinh dang anh tiff', "
+                               "updated_at = %s WHERE id = %s", (get_time(), id,))
+                conn.commit()
+                return False
+            elif epsg_code != 4326:
+                converted_input_files_local = local_file_path.split(".")[0] + "_4326.tif"
+                convert_epsg_4326(local_file_path, converted_input_files_local)
+                local_file_path = converted_input_files_local
+            date_create = get_time_string()
+            output_image_name = "result_geometric_correction_" + format(date_create) + ".tif"
+            output_path = os.path.join(LOCAL_RESULT_GEOMETRIC_CORRECTION_IMAGE_PATH, output_image_name)
+            preprocess_image = Preprocessing_Image()
+            preprocess_image.geometric_correction(local_file_path, output_path, src_points, dst_points)
+            result_image_name = output_path.split("/")[-1]
+            ftp_dir = FTP_GEOMETRIC_CORRECTION_IMAGE_PATH
+            ftp.cwd(str(ftp_dir))
+            save_dir = ftp_dir + "/" + result_image_name
+            task_output = str({
+                "output_image": [save_dir]
+            }).replace("'", "\"")
+            with open(output_path, "rb") as file:
+                ftp.storbinary(f"STOR {save_dir}", file)
+            ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            # owner_group = 'avtadmin:avtadmin'
+            # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+            # ftp.sendcmd(chown_command)
+            # print("Connection closed")
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
+                           (task_output, get_time(), id,))
+            conn.commit()
+            return True
+        except ftplib.all_errors as e:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Lỗi đầu vào' WHERE id = %s", (id,))
+            conn.commit()
+            # print(f"FTP error: {e}")
+            return False
+
+    def gcp_correction(self, conn, id, task_param, ftp):
+        input_file = task_param['input_file'][0]
+        param = task_param['points']
+        param = ast.literal_eval(param)
+        src_points = [point[0] for point in param]
+        dst_points = [point[1] for point in param]
+        try:
+            filename = input_file.split("/")[-1]
+            local_file_path = os.path.join(LOCAL_SRC_GCP_CORRECTION_IMAGE_PATH, filename)
+            if not os.path.isfile(local_file_path):
+                download_file(ftp, input_file, local_file_path)
+            epsg_code = check_epsg_code(local_file_path)
+            if epsg_code == 0:
+                cursor = conn.cursor()
+                route_to_db(cursor)
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Khong dung dinh dang anh tiff', "
+                               "updated_at = %s WHERE id = %s", (get_time(), id,))
+                conn.commit()
+                return False
+            elif epsg_code != 4326:
+                converted_input_files_local = local_file_path.split(".")[0] + "_4326.tif"
+                convert_epsg_4326(local_file_path, converted_input_files_local)
+                local_file_path = converted_input_files_local
+            date_create = get_time_string()
+            output_image_name = "result_gcp_correction_" + format(date_create) + ".tif"
+            output_path = os.path.join(LOCAL_RESULT_GCP_CORRECTION_IMAGE_PATH, output_image_name)
+            preprocess_image = Preprocessing_Image()
+            preprocess_image.gcp_correction(local_file_path, output_path, src_points, dst_points)
+            result_image_name = output_path.split("/")[-1]
+            ftp_dir = FTP_GCP_CORRECTION_IMAGE_PATH
+            ftp.cwd(str(ftp_dir))
+            save_dir = ftp_dir + "/" + result_image_name
+            task_output = str({
+                "output_image": [save_dir]
+            }).replace("'", "\"")
+            with open(output_path, "rb") as file:
+                ftp.storbinary(f"STOR {save_dir}", file)
+            ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            # owner_group = 'avtadmin:avtadmin'
+            # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+            # ftp.sendcmd(chown_command)
+            # print("Connection closed")
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
+                           (task_output, get_time(), id,))
+            conn.commit()
+            return True
+        except ftplib.all_errors as e:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Lỗi đầu vào' WHERE id = %s", (id,))
+            conn.commit()
+            # print(f"FTP error: {e}")
+            return False
+
+    def dem_correction(self, conn, id, task_param, ftp):
+        input_file = task_param['input_file'][0]
+        try:
+            filename = input_file.split("/")[-1]
+            local_file_path = os.path.join(LOCAL_SRC_DEM_CORRECTION_IMAGE_PATH, filename)
+            if not os.path.isfile(local_file_path):
+                download_file(ftp, input_file, local_file_path)
+            epsg_code = check_epsg_code(local_file_path)
+            if epsg_code == 0:
+                cursor = conn.cursor()
+                route_to_db(cursor)
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Khong dung dinh dang anh tiff', "
+                               "updated_at = %s WHERE id = %s", (get_time(), id,))
+                conn.commit()
+                return False
+            elif epsg_code != 4326:
+                converted_input_files_local = local_file_path.split(".")[0] + "_4326.tif"
+                convert_epsg_4326(local_file_path, converted_input_files_local)
+                local_file_path = converted_input_files_local
+            date_create = get_time_string()
+            output_image_name = "result_dem_correction_" + format(date_create) + ".tif"
+            output_path = os.path.join(LOCAL_RESULT_DEM_CORRECTION_IMAGE_PATH, output_image_name)
+            preprocess_image = Preprocessing_Image()
+            preprocess_image.dem_correction(local_file_path, output_path, )
+            result_image_name = output_path.split("/")[-1]
+            ftp_dir = FTP_DEM_CORRECTION_IMAGE_PATH
+            ftp.cwd(str(ftp_dir))
+            save_dir = ftp_dir + "/" + result_image_name
+            task_output = str({
+                "output_image": [save_dir]
+            }).replace("'", "\"")
+            with open(output_path, "rb") as file:
+                ftp.storbinary(f"STOR {save_dir}", file)
+            ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            # owner_group = 'avtadmin:avtadmin'
+            # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+            # ftp.sendcmd(chown_command)
+            # print("Connection closed")
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
+                           (task_output, get_time(), id,))
+            conn.commit()
+            return True
+        except ftplib.all_errors as e:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Lỗi đầu vào' WHERE id = %s", (id,))
+            conn.commit()
+            # print(f"FTP error: {e}")
+            return False
+
     def process(self, id, config_data):
         conn = psycopg2.connect(
             dbname=config_data['database']['database'],
@@ -783,6 +1064,16 @@ class Preprocessing:
                 return_flag = preprocess.image_format_convert(conn, id, task_param, ftp)
             elif algorithm == "nang_cao_chat_luong":
                 return_flag = preprocess.enhance_image(conn, id, task_param, ftp)
+            elif algorithm == "hieu_chinh_vat_ly":
+                return_flag = preprocess.physical_error_correction(conn, id, task_param, ftp)
+            elif algorithm == "hieu_chinh_vo_tuyen":
+                return_flag = preprocess.radiometric_correction(conn, id, task_param, ftp)
+            elif algorithm == "hieu_chinh_dia_ly":
+                return_flag = preprocess.geometric_correction(conn, id, task_param, ftp)
+            elif algorithm == "hieu_chinh_diem_khong_che":
+                return_flag = preprocess.gcp_correction(conn, id, task_param, ftp)
+            elif algorithm == "hieu_chinh_do_cao":
+                return_flag = preprocess.dem_correction(conn, id, task_param, ftp)
             cursor.close()
             if return_flag:
                 task_stat_value_holder['value'] = 1
