@@ -138,8 +138,17 @@ class Preprocessing:
         pass
 
     def enhance_image(self, conn, id, task_param, ftp):
-        input_file = task_param['input_file'][0]
-        print(input_file)
+        input_file_arr = task_param['input_file']
+        if len(input_file_arr) < 1:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute(
+                "UPDATE avt_task SET task_stat = 0, task_message = 'Không có ảnh',"
+                "updated_at = %s WHERE id = %s", (get_time(), id))
+            conn.commit()
+            return False
+        input_file = input_file_arr[0]
+        # print(input_file)
         do_tuong_phan = task_param['do_tuong_phan']
         do_sang = task_param['do_sang']
         do_net = task_param['do_net']
@@ -329,7 +338,16 @@ class Preprocessing:
             return False
 
     def merge_channel(self, conn, id, task_param, ftp):
-        input_file = task_param['input_file'][0]
+        input_file_arr = task_param['input_file']
+        if len(input_file_arr) < 1:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute(
+                "UPDATE avt_task SET task_stat = 0, task_message = 'Không có ảnh',"
+                "updated_at = %s WHERE id = %s", (get_time(), id))
+            conn.commit()
+            return False
+        input_file = input_file_arr[0]
         selected_channels = ast.literal_eval(task_param['selected_channels'])
         try:
             filename = input_file.split("/")[-1]
@@ -398,7 +416,16 @@ class Preprocessing:
             return False
 
     def image_format_convert(self, conn, id, task_param, ftp):
-        input_file = task_param['input_file'][0]
+        input_file_arr = task_param['input_file']
+        if len(input_file_arr) < 1:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute(
+                "UPDATE avt_task SET task_stat = 0, task_message = 'Không có ảnh',"
+                "updated_at = %s WHERE id = %s", (get_time(), id))
+            conn.commit()
+            return False
+        input_file = input_file_arr[0]
         polygon = task_param['polygon']
         polygon_coords = ast.literal_eval(polygon)[0]
         selected_channels = ast.literal_eval(task_param['selected_channels'])
@@ -621,7 +648,16 @@ class Preprocessing:
             return False
 
     def adjust_gamma(self, conn, id, task_param, ftp):
-        src_img_path = task_param['input_file'][0]
+        input_file_arr = task_param['input_file']
+        if len(input_file_arr) < 1:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute(
+                "UPDATE avt_task SET task_stat = 0, task_message = 'Không có ảnh',"
+                "updated_at = %s WHERE id = %s", (get_time(), id))
+            conn.commit()
+            return False
+        src_img_path = input_file_arr[0]
         gamma = task_param['gamma']
         try:
             filename = src_img_path.split("/")[-1]
@@ -659,7 +695,16 @@ class Preprocessing:
             return False
 
     def equalize_hist(self, conn, id, task_param, ftp):
-        src_img_path = task_param['input_file'][0]
+        input_file_arr = task_param['input_file']
+        if len(input_file_arr) < 1:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute(
+                "UPDATE avt_task SET task_stat = 0, task_message = 'Không có ảnh',"
+                "updated_at = %s WHERE id = %s", (get_time(), id))
+            conn.commit()
+            return False
+        src_img_path = input_file_arr[0]
         mode = task_param['mode']
         tileGridSize = task_param['tileGridSize']
         try:
@@ -698,7 +743,16 @@ class Preprocessing:
             return False
 
     def illumination_correct(self, conn, id, task_param, ftp):
-        input_file = task_param['input_file'][0]
+        input_file_arr = task_param['input_file']
+        if len(input_file_arr) < 1:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute(
+                "UPDATE avt_task SET task_stat = 0, task_message = 'Không có ảnh',"
+                "updated_at = %s WHERE id = %s", (get_time(), id))
+            conn.commit()
+            return False
+        input_file = input_file_arr[0]
         try:
             filename = input_file.split("/")[-1]
             local_file_path = os.path.join(LOCAL_SRC_ILLUM_CORRECT_IMAGE_PATH, filename)
@@ -750,7 +804,16 @@ class Preprocessing:
             return False
 
     def physical_error_correction(self, conn, id, task_param, ftp):
-        input_file = task_param['input_file'][0]
+        input_file_arr = task_param['input_file']
+        if len(input_file_arr) < 1:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute(
+                "UPDATE avt_task SET task_stat = 0, task_message = 'Không có ảnh',"
+                "updated_at = %s WHERE id = %s", (get_time(), id))
+            conn.commit()
+            return False
+        input_file = input_file_arr[0]
         try:
             filename = input_file.split("/")[-1]
             local_file_path = os.path.join(LOCAL_SRC_PHYSICAL_CORRECTION_IMAGE_PATH, filename)
@@ -802,7 +865,16 @@ class Preprocessing:
             return False
 
     def radiometric_correction(self, conn, id, task_param, ftp):
-        input_file = task_param['input_file'][0]
+        input_file_arr = task_param['input_file']
+        if len(input_file_arr) < 1:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute(
+                "UPDATE avt_task SET task_stat = 0, task_message = 'Không có ảnh',"
+                "updated_at = %s WHERE id = %s", (get_time(), id))
+            conn.commit()
+            return False
+        input_file = input_file_arr[0]
         reference_images = task_param['reference_images_paths']
         try:
             reference_images_local = []
@@ -862,7 +934,16 @@ class Preprocessing:
             return False
 
     def geometric_correction(self, conn, id, task_param, ftp):
-        input_file = task_param['input_file'][0]
+        input_file_arr = task_param['input_file']
+        if len(input_file_arr) < 1:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute(
+                "UPDATE avt_task SET task_stat = 0, task_message = 'Không có ảnh',"
+                "updated_at = %s WHERE id = %s", (get_time(), id))
+            conn.commit()
+            return False
+        input_file = input_file_arr[0]
         param = task_param['points']
         param = ast.literal_eval(param)
         src_points = [point[0] for point in param]
@@ -918,7 +999,16 @@ class Preprocessing:
             return False
 
     def gcp_correction(self, conn, id, task_param, ftp):
-        input_file = task_param['input_file'][0]
+        input_file_arr = task_param['input_file']
+        if len(input_file_arr) < 1:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute(
+                "UPDATE avt_task SET task_stat = 0, task_message = 'Không có ảnh',"
+                "updated_at = %s WHERE id = %s", (get_time(), id))
+            conn.commit()
+            return False
+        input_file = input_file_arr[0]
         param = task_param['points']
         param = ast.literal_eval(param)
         src_points = [point[0] for point in param]
@@ -974,7 +1064,16 @@ class Preprocessing:
             return False
 
     def dem_correction(self, conn, id, task_param, ftp):
-        input_file = task_param['input_file'][0]
+        input_file_arr = task_param['input_file']
+        if len(input_file_arr) < 1:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute(
+                "UPDATE avt_task SET task_stat = 0, task_message = 'Không có ảnh',"
+                "updated_at = %s WHERE id = %s", (get_time(), id))
+            conn.commit()
+            return False
+        input_file = input_file_arr[0]
         try:
             filename = input_file.split("/")[-1]
             local_file_path = os.path.join(LOCAL_SRC_DEM_CORRECTION_IMAGE_PATH, filename)
