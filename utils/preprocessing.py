@@ -171,7 +171,7 @@ class Preprocessing:
             if epsg_code == 0:
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Khong dung dinh dang anh tiff', "
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Không đúng định dạng ảnh tiff', "
                                "updated_at = %s WHERE id = %s", (get_time(), id,))
                 conn.commit()
                 return False
@@ -372,18 +372,32 @@ class Preprocessing:
             output_path = os.path.join(LOCAL_RESULT_MERGE_CHANNEL_PATH, output_image_name)
             preprocess_image = Preprocessing_Image()
             channel_check = preprocess_image.band_check(local_file_path)
-            if channel_check == 1:
+            if channel_check == 0:
                 cursor = conn.cursor()
                 route_to_db(cursor)
                 cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Chưa đủ kênh phổ', updated_at = %s "
                                "WHERE id = %s", (get_time(), id,))
                 conn.commit()
                 return False
+            elif channel_check == 1:
+                cursor = conn.cursor()
+                route_to_db(cursor)
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Kênh phổ hồng ngoại bị lặp từ kênh "
+                               "ảnh 1', updated_at = %s WHERE id = %s", (get_time(), id,))
+                conn.commit()
+                return False
             elif channel_check == 2:
                 cursor = conn.cursor()
                 route_to_db(cursor)
                 cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Kênh phổ hồng ngoại bị lặp từ kênh "
-                               "ảnh', updated_at = %s WHERE id = %s", (get_time(), id,))
+                               "ảnh 2', updated_at = %s WHERE id = %s", (get_time(), id,))
+                conn.commit()
+                return False
+            elif channel_check == 3:
+                cursor = conn.cursor()
+                route_to_db(cursor)
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Kênh phổ hồng ngoại bị lặp từ kênh "
+                               "ảnh 3', updated_at = %s WHERE id = %s", (get_time(), id,))
                 conn.commit()
                 return False
             else:
@@ -762,7 +776,7 @@ class Preprocessing:
             if epsg_code == 0:
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Khong dung dinh dang anh tiff EPSG',"
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Không đúng định dạng ảnh tiff EPSG',"
                                "updated_at = %s WHERE id = %s", (get_time(), id))
                 conn.commit()
                 return False
@@ -823,7 +837,7 @@ class Preprocessing:
             if epsg_code == 0:
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Khong dung dinh dang anh tiff', "
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Không đúng định dạng ảnh tiff', "
                                "updated_at = %s WHERE id = %s", (get_time(), id,))
                 conn.commit()
                 return False
@@ -892,7 +906,7 @@ class Preprocessing:
             if epsg_code == 0:
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Khong dung dinh dang anh tiff', "
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Không đúng định dạng ảnh tiff', "
                                "updated_at = %s WHERE id = %s", (get_time(), id,))
                 conn.commit()
                 return False
@@ -957,7 +971,7 @@ class Preprocessing:
             if epsg_code == 0:
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Khong dung dinh dang anh tiff', "
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Không đúng định dạng ảnh tiff', "
                                "updated_at = %s WHERE id = %s", (get_time(), id,))
                 conn.commit()
                 return False
@@ -1022,7 +1036,7 @@ class Preprocessing:
             if epsg_code == 0:
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Khong dung dinh dang anh tiff', "
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Không đúng định dạng ảnh tiff', "
                                "updated_at = %s WHERE id = %s", (get_time(), id,))
                 conn.commit()
                 return False
@@ -1065,6 +1079,7 @@ class Preprocessing:
 
     def dem_correction(self, conn, id, task_param, ftp):
         input_file_arr = task_param['input_file']
+        input_file_dem_arr = task_param['input_file_dem']
         if len(input_file_arr) < 1:
             cursor = conn.cursor()
             route_to_db(cursor)
@@ -1073,7 +1088,16 @@ class Preprocessing:
                 "updated_at = %s WHERE id = %s", (get_time(), id))
             conn.commit()
             return False
+        if len(input_file_dem_arr) < 1:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute(
+                "UPDATE avt_task SET task_stat = 0, task_message = 'Không có ảnh DEM',"
+                "updated_at = %s WHERE id = %s", (get_time(), id))
+            conn.commit()
+            return False
         input_file = input_file_arr[0]
+        input_file_dem = input_file_dem_arr[0]
         try:
             filename = input_file.split("/")[-1]
             local_file_path = os.path.join(LOCAL_SRC_DEM_CORRECTION_IMAGE_PATH, filename)
@@ -1083,7 +1107,7 @@ class Preprocessing:
             if epsg_code == 0:
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Khong dung dinh dang anh tiff', "
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Không đúng định dạng ảnh tiff', "
                                "updated_at = %s WHERE id = %s", (get_time(), id,))
                 conn.commit()
                 return False
@@ -1091,11 +1115,23 @@ class Preprocessing:
                 converted_input_files_local = local_file_path.split(".")[0] + "_4326.tif"
                 convert_epsg_4326(local_file_path, converted_input_files_local)
                 local_file_path = converted_input_files_local
+            filename_dem = input_file_dem.split("/")[-1]
+            local_file_path_dem = os.path.join(LOCAL_DEM_IMAGE_PATH, filename_dem)
+            if not os.path.isfile(local_file_path_dem):
+                download_file(ftp, input_file_dem, local_file_path_dem)
             date_create = get_time_string()
             output_image_name = "result_dem_correction_" + format(date_create) + ".tif"
             output_path = os.path.join(LOCAL_RESULT_DEM_CORRECTION_IMAGE_PATH, output_image_name)
             preprocess_image = Preprocessing_Image()
-            preprocess_image.dem_correction(local_file_path, output_path, )
+            dem_band_check = preprocess_image.dem_band_check(local_file_path_dem)
+            if not dem_band_check:
+                cursor = conn.cursor()
+                route_to_db(cursor)
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Không đúng định dạng ảnh DEM', "
+                               "updated_at = %s WHERE id = %s", (get_time(), id,))
+                conn.commit()
+                return False
+            preprocess_image.dem_correction(local_file_path, local_file_path_dem, output_path)
             result_image_name = output_path.split("/")[-1]
             ftp_dir = FTP_DEM_CORRECTION_IMAGE_PATH
             ftp.cwd(str(ftp_dir))

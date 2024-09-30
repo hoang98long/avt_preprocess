@@ -11,6 +11,7 @@ import numpy as np
 from rasterio.enums import Resampling
 from scipy.optimize import least_squares
 from skimage.exposure import match_histograms
+from osgeo import gdal
 
 
 def normalize_band(band):
@@ -93,12 +94,17 @@ class Preprocessing_Image:
             ir_channel = channels[-1]
             rgb_channels = channels[:-1]
             if len(channels) < 4:
-                return 1  # Thiếu kênh phổ
+                return 0  # Thiếu kênh phổ
             for i in range(len(channels)):
                 for j in range(i + 1, len(channels)):
                     if np.array_equal(channels[i], channels[j]):
-                        return 2  # Có trùng lặp kênh phổ
-        return 0  # Đủ kênh phổ
+                        if i == 0:
+                            return 1  # Có trùng lặp kênh phổ 1
+                        elif i == 1:
+                            return 2  # Có trùng lặp kênh phổ 2
+                        else:
+                            return 3  # Có trùng lặp kênh phổ 3
+        return 10  # Đủ kênh phổ
 
     def preprocess_no_ir(self, tiff_image_path, output_path):
         with rasterio.open(tiff_image_path) as src:
@@ -488,5 +494,45 @@ class Preprocessing_Image:
         with rasterio.open(output_path, 'w', **new_metadata) as dst:
             dst.write(corrected_image)
 
-    def dem_correction(self, input_path, output_path):
-        return 0
+    def dem_correction(self, aerial_image_path, dem_path, output_path):
+        aerial_image = gdal.Open(aerial_image_path)
+        aerial_band = aerial_image.GetRasterBand(1)
+        aerial_array = aerial_band.ReadAsArray()
+
+        dem = gdal.Open(dem_path)
+        dem_band = dem.GetRasterBand(1)
+        dem_array = dem_band.ReadAsArray()
+
+        aerial_geotransform = aerial_image.GetGeoTransform()
+        dem_geotransform = dem.GetGeoTransform()
+        rows, cols = aerial_array.shape
+        dem_rows, dem_cols = dem_array.shape
+
+        corrected_image = np.zeros_like(aerial_array)
+
+        inv_geotransform = gdal.InvGeoTransform(aerial_geotransform)
+
+        for i in range(rows):
+            for j in range(cols):
+                x, y = gdal.ApplyGeoTransform(inv_geotransform, j, i)
+                dem_x = int((x - dem_geotransform[0]) / dem_geotransform[1])
+                dem_y = int((y - dem_geotransform[3]) / dem_geotransform[5])
+                if 0 <= dem_x < dem_cols and 0 <= dem_y < dem_rows:
+                    elevation = dem_array[dem_y, dem_x]
+                    corrected_image[i, j] = aerial_array[i, j] + elevation
+        driver = gdal.GetDriverByName('GTiff')
+        out_raster = driver.Create(output_path, cols, rows, 1, gdal.GDT_Float32)
+        out_raster.SetGeoTransform(aerial_geotransform)
+        out_raster.SetProjection(aerial_image.GetProjection())
+        out_band = out_raster.GetRasterBand(1)
+        out_band.WriteArray(corrected_image)
+        out_band.SetNoDataValue(-9999)
+        out_band.FlushCache()
+
+    def dem_band_check(self, dem_path):
+        with rasterio.open(dem_path) as src:
+            num_channels = src.count
+        if num_channels == 1:
+            return True
+        else:
+            return False
