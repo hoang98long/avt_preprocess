@@ -893,7 +893,7 @@ class Preprocessing:
         try:
             reference_images_local = []
             for reference_image in reference_images:
-                reference_image_name = reference_image.split("/")[-1]
+                reference_image_name = reference_image.replace("/", "_")[1:]
                 local_reference_image_path = os.path.join(LOCAL_RADIOMETRIC_CORRECTION_REFERENCE_IMAGE_PATH, reference_image_name)
                 reference_images_local.append(local_reference_image_path)
                 if not os.path.isfile(local_reference_image_path):
