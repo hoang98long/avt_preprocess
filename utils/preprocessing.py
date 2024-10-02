@@ -959,7 +959,7 @@ class Preprocessing:
             return False
         input_file = input_file_arr[0]
         param = task_param['points']
-        param = ast.literal_eval(param)
+        # param = ast.literal_eval(param)
         src_points = [point[0] for point in param]
         dst_points = [point[1] for point in param]
         try:
@@ -1024,7 +1024,7 @@ class Preprocessing:
             return False
         input_file = input_file_arr[0]
         param = task_param['points']
-        param = ast.literal_eval(param)
+        # param = ast.literal_eval(param)
         src_points = [point[0] for point in param]
         dst_points = [point[1] for point in param]
         try:
