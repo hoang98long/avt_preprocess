@@ -424,7 +424,8 @@ class Preprocessing_Image:
         png_histograms = []
         for png_path in png_paths:
             png_img = cv2.imread(png_path)
-            png_histograms.append(png_img)
+            png_img_rgb = cv2.cvtColor(png_img, cv2.COLOR_BGR2RGB)
+            png_histograms.append(png_img_rgb)
         png_histograms = np.array(png_histograms)
         median_histogram = np.median(png_histograms, axis=0).astype(np.uint8)
         adjusted_rgb = np.zeros_like(rgb_channels, dtype=np.uint8)
