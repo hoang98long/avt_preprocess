@@ -53,3 +53,6 @@ LOCAL_RESULT_GCP_CORRECTION_IMAGE_PATH = 'images/gcp_correction/result/'
 LOCAL_SRC_DEM_CORRECTION_IMAGE_PATH = 'images/dem_correction/source/'
 LOCAL_RESULT_DEM_CORRECTION_IMAGE_PATH = 'images/dem_correction/result/'
 LOCAL_DEM_IMAGE_PATH = 'images/dem_correction/dem/'
+
+LOCAL_SRC_ORTHOGONAL_CORRECT_IMAGE_PATH = 'images/orthogonal_correct/source/'
+LOCAL_RESULT_ORTHOGONAL_CORRECT_IMAGE_PATH = 'images/orthogonal_correct/result/'

@@ -12,6 +12,8 @@ from rasterio.enums import Resampling
 from scipy.optimize import least_squares
 from skimage.exposure import match_histograms
 from osgeo import gdal
+from rasterio.crs import CRS
+from rasterio.warp import reproject
 
 
 def normalize_band(band):
@@ -58,6 +60,9 @@ def transform_image(img, params):
     corrected_img = cv2.remap(img, map_x, map_y, cv2.INTER_LINEAR)
     return corrected_img
 
+
+def get_ortho_proj(crs_string):
+    return CRS.from_string(crs_string)
 
 class Preprocessing_Image:
     def __init__(self):
@@ -412,8 +417,61 @@ class Preprocessing_Image:
                 cv2.imwrite(result_image_path + ".jpg", input_image)
         return result_image_path
 
-    def physical_error_correction(self, input_path, output_path):
-        return 0
+    def physical_error_correction(self, input_file, output_file, distortion_factor):
+        assert float(cv2.__version__.rsplit('.', 1)[0]) >= 3, 'OpenCV version 3 or newer required.'
+
+        # Focal lengths fx and fy remain unchanged
+        fx = 5000
+        fy = 5000
+
+        # Read the TIFF image using rasterio to get the dimensions
+        with rasterio.open(input_file) as src:
+            width = src.width
+            height = src.height
+
+            # Calculate cx and cy based on the image dimensions
+            cx = (width - 1) / 2
+            cy = (height - 1) / 2
+
+            # Construct the new intrinsic matrix K
+            K = np.array([[fx, 0., cx],
+                          [0., fy, cy],
+                          [0., 0., 1]])
+
+            # Read the first three channels (RGB)
+            rgb_image = src.read([1, 2, 3]).transpose(1, 2, 0)
+
+            # Read the IR channel
+            ir_channel = src.read(4)
+
+        # Zero distortion coefficients
+        D = np.array([0., 0., 0., 0.])
+
+        # Use Knew to scale the output
+        Knew = K.copy()
+        Knew[(0, 1), (0, 1)] = distortion_factor * Knew[(0, 1), (0, 1)]
+
+        # Apply fisheye undistortion to the RGB channels
+        img_undistorted_rgb = cv2.fisheye.undistortImage(rgb_image, K, D=D, Knew=Knew)
+
+        # Stack the undistorted RGB and the IR channel back together
+        img_undistorted = np.dstack((img_undistorted_rgb, ir_channel))
+
+        # Save the undistorted image as a 4-channel TIFF
+        with rasterio.open(
+                output_file,
+                'w',
+                driver='GTiff',
+                height=img_undistorted.shape[0],
+                width=img_undistorted.shape[1],
+                count=4,  # Four channels: R, G, B, IR
+                dtype=img_undistorted.dtype
+        ) as dst:
+            # Write each channel back to the TIFF file
+            dst.write(img_undistorted[:, :, 0], 1)  # Red channel
+            dst.write(img_undistorted[:, :, 1], 2)  # Green channel
+            dst.write(img_undistorted[:, :, 2], 3)  # Blue channel
+            dst.write(img_undistorted[:, :, 3], 4)  # IR channel
 
     def radiometric_correction(self, input_path, output_path, png_paths):
         with rasterio.open(input_path) as tiff_src:
@@ -495,40 +553,53 @@ class Preprocessing_Image:
         with rasterio.open(output_path, 'w', **new_metadata) as dst:
             dst.write(corrected_image)
 
-    def dem_correction(self, aerial_image_path, dem_path, output_path):
-        aerial_image = gdal.Open(aerial_image_path)
-        aerial_band = aerial_image.GetRasterBand(1)
-        aerial_array = aerial_band.ReadAsArray()
+    def dem_correction(self, aerial_image_path, dem_path, output_path, lon_angle, lat_angle):
+        with rasterio.open(aerial_image_path) as source:
+            src_crs = "EPSG:4326"  # Hệ tọa độ của RPCs
 
-        dem = gdal.Open(dem_path)
-        dem_band = dem.GetRasterBand(1)
-        dem_array = dem_band.ReadAsArray()
+            # Lấy kích thước từ ảnh gốc
+            src_width = source.width
+            src_height = source.height
+            dst_crs = "EPSG:3857"
 
-        aerial_geotransform = aerial_image.GetGeoTransform()
-        dem_geotransform = dem.GetGeoTransform()
-        rows, cols = aerial_array.shape
-        dem_rows, dem_cols = dem_array.shape
+            # Optional keyword arguments to be passed to GDAL transformer
+            kwargs = {
+                'RPC_DEM': dem_path
+            }
 
-        corrected_image = np.zeros_like(aerial_array)
+            # Kiểm tra số lượng kênh (bands) của ảnh nguồn
+            num_bands = source.count
 
-        inv_geotransform = gdal.InvGeoTransform(aerial_geotransform)
+            # Tạo mảng đầu ra cho ảnh đích với kích thước giống với ảnh gốc
+            destination = np.zeros((num_bands, src_height, src_width), dtype=np.uint8)
 
-        for i in range(rows):
-            for j in range(cols):
-                x, y = gdal.ApplyGeoTransform(inv_geotransform, j, i)
-                dem_x = int((x - dem_geotransform[0]) / dem_geotransform[1])
-                dem_y = int((y - dem_geotransform[3]) / dem_geotransform[5])
-                if 0 <= dem_x < dem_cols and 0 <= dem_y < dem_rows:
-                    elevation = dem_array[dem_y, dem_x]
-                    corrected_image[i, j] = aerial_array[i, j] + elevation
-        driver = gdal.GetDriverByName('GTiff')
-        out_raster = driver.Create(output_path, cols, rows, 1, gdal.GDT_Float32)
-        out_raster.SetGeoTransform(aerial_geotransform)
-        out_raster.SetProjection(aerial_image.GetProjection())
-        out_band = out_raster.GetRasterBand(1)
-        out_band.WriteArray(corrected_image)
-        out_band.SetNoDataValue(-9999)
-        out_band.FlushCache()
+            # Xử lý từng kênh của ảnh
+            for i in range(1, num_bands + 1):  # Duyệt qua các kênh từ 1 đến num_bands
+                _, dst_transform = reproject(
+                    rasterio.band(source, i),
+                    destination[i - 1],  # Chọn đúng kênh trong destination
+                    rpcs=source.rpcs,
+                    src_crs=src_crs,
+                    dst_crs=dst_crs,
+                    resampling=Resampling.nearest,
+                    **kwargs
+                )
+
+            # Lưu kết quả ra file TIFF mới với kích thước và số kênh giống ảnh gốc
+            new_tiff_path = output_path
+            with rasterio.open(
+                    new_tiff_path, 'w',
+                    driver='GTiff',
+                    height=src_height,  # Chiều cao lấy từ ảnh gốc
+                    width=src_width,  # Chiều rộng lấy từ ảnh gốc
+                    count=num_bands,  # Số lượng kênh giống ảnh gốc
+                    dtype=destination.dtype,
+                    crs=dst_crs,
+                    transform=dst_transform
+            ) as dst:
+                # Ghi tất cả các kênh vào file
+                for i in range(1, num_bands + 1):
+                    dst.write(destination[i - 1], i)  # Ghi từng kênh vào band tương ứng
 
     def dem_band_check(self, dem_path):
         with rasterio.open(dem_path) as src:
@@ -537,3 +608,34 @@ class Preprocessing_Image:
             return True
         else:
             return False
+
+    def orthogonal_correct(self, input_file, output_file, crs_string):
+        dst_crs = get_ortho_proj(crs_string)
+        dataset = rasterio.open(input_file)
+        orig_data = dataset.read()
+        transform, width, height = rasterio.warp.calculate_default_transform(
+            dataset.crs, dst_crs, dataset.width, dataset.height,
+            left=dataset.bounds.left, right=dataset.bounds.right,
+            top=dataset.bounds.top, bottom=dataset.bounds.bottom
+        )
+        ortho_data = np.zeros((dataset.count, height, width), dtype=orig_data.dtype)
+        for i in range(1, dataset.count + 1):
+            reproject(
+                source=orig_data[i - 1],
+                destination=ortho_data[i - 1],
+                src_transform=dataset.transform,
+                src_crs=dataset.crs,
+                dst_transform=transform,
+                dst_crs=dst_crs,
+                resampling=Resampling.bilinear,
+                dst_nodata=0
+            )
+        with rasterio.open(
+                output_file, 'w',
+                driver='GTiff',
+                height=height, width=width,
+                count=dataset.count,
+                dtype=ortho_data.dtype,
+                crs=dst_crs, transform=transform
+        ) as dst:
+            dst.write(ortho_data)

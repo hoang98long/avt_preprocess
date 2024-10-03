@@ -26,6 +26,7 @@ FTP_RADIOMETRIC_CORRECTION_IMAGE_PATH = ftp_directory['radiometric_correct_resul
 FTP_GEOMETRIC_CORRECTION_IMAGE_PATH = ftp_directory['geometric_correct_result_directory']
 FTP_GCP_CORRECTION_IMAGE_PATH = ftp_directory['gcp_correct_result_directory']
 FTP_DEM_CORRECTION_IMAGE_PATH = ftp_directory['dem_correct_result_directory']
+FTP_ORTHOGONAL_CORRECT_IMAGE_PATH = ftp_directory['orthogonal_correct_result_directory']
 
 
 def connect_ftp(config_data):
@@ -819,6 +820,7 @@ class Preprocessing:
 
     def physical_error_correction(self, conn, id, task_param, ftp):
         input_file_arr = task_param['input_file']
+        distortion_factor = float(task_param['distortion_factor'])
         if len(input_file_arr) < 1:
             cursor = conn.cursor()
             route_to_db(cursor)
@@ -849,7 +851,7 @@ class Preprocessing:
             output_image_name = "result_physical_correction_" + format(date_create) + ".tif"
             output_path = os.path.join(LOCAL_RESULT_PHYSICAL_CORRECTION_IMAGE_PATH, output_image_name)
             preprocess_image = Preprocessing_Image()
-            preprocess_image.physical_error_correction(local_file_path, output_path,)
+            preprocess_image.physical_error_correction(local_file_path, output_path, distortion_factor)
             result_image_name = output_path.split("/")[-1]
             ftp_dir = FTP_PHYSICAL_CORRECTION_IMAGE_PATH
             ftp.cwd(str(ftp_dir))
@@ -894,7 +896,8 @@ class Preprocessing:
             reference_images_local = []
             for reference_image in reference_images:
                 reference_image_name = reference_image.replace("/", "_")[1:]
-                local_reference_image_path = os.path.join(LOCAL_RADIOMETRIC_CORRECTION_REFERENCE_IMAGE_PATH, reference_image_name)
+                local_reference_image_path = os.path.join(LOCAL_RADIOMETRIC_CORRECTION_REFERENCE_IMAGE_PATH,
+                                                          reference_image_name)
                 reference_images_local.append(local_reference_image_path)
                 if not os.path.isfile(local_reference_image_path):
                     download_file(ftp, reference_image, local_reference_image_path)
@@ -1080,6 +1083,8 @@ class Preprocessing:
     def dem_correction(self, conn, id, task_param, ftp):
         input_file_arr = task_param['input_file']
         input_file_dem_arr = task_param['input_file_dem']
+        lat_angle = float(task_param['lat_angle'])
+        lon_angle = float(task_param['lon_angle'])
         if len(input_file_arr) < 1:
             cursor = conn.cursor()
             route_to_db(cursor)
@@ -1160,6 +1165,68 @@ class Preprocessing:
             # print(f"FTP error: {e}")
             return False
 
+    def orthogonal_correct(self, conn, id, task_param, ftp):
+        input_file_arr = task_param['input_file']
+        crs_string = task_param['crs_string']
+        if len(input_file_arr) < 1:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute(
+                "UPDATE avt_task SET task_stat = 0, task_message = 'Không có ảnh',"
+                "updated_at = %s WHERE id = %s", (get_time(), id))
+            conn.commit()
+            return False
+        input_file = input_file_arr[0]
+        try:
+            filename = input_file.split("/")[-1]
+            local_file_path = os.path.join(LOCAL_SRC_ORTHOGONAL_CORRECT_IMAGE_PATH, filename)
+            if not os.path.isfile(local_file_path):
+                download_file(ftp, input_file, local_file_path)
+            epsg_code = check_epsg_code(local_file_path)
+            if epsg_code == 0:
+                cursor = conn.cursor()
+                route_to_db(cursor)
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Không đúng định dạng ảnh tiff', "
+                               "updated_at = %s WHERE id = %s", (get_time(), id,))
+                conn.commit()
+                return False
+            elif epsg_code != 4326:
+                converted_input_files_local = local_file_path.split(".")[0] + "_4326.tif"
+                convert_epsg_4326(local_file_path, converted_input_files_local)
+                local_file_path = converted_input_files_local
+            date_create = get_time_string()
+            output_image_name = "result_orthogonal_correct_" + format(date_create) + ".tif"
+            output_path = os.path.join(LOCAL_RESULT_ORTHOGONAL_CORRECT_IMAGE_PATH, output_image_name)
+            preprocess_image = Preprocessing_Image()
+            preprocess_image.orthogonal_correct(local_file_path, output_path, crs_string)
+            result_image_name = output_path.split("/")[-1]
+            ftp_dir = FTP_ORTHOGONAL_CORRECT_IMAGE_PATH
+            ftp.cwd(str(ftp_dir))
+            save_dir = ftp_dir + "/" + result_image_name
+            task_output = str({
+                "output_image": [save_dir]
+            }).replace("'", "\"")
+            with open(output_path, "rb") as file:
+                ftp.storbinary(f"STOR {save_dir}", file)
+            ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            # owner_group = 'avtadmin:avtadmin'
+            # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+            # ftp.sendcmd(chown_command)
+            # print("Connection closed")
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
+                           (task_output, get_time(), id,))
+            conn.commit()
+            return True
+        except ftplib.all_errors as e:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Lỗi đầu vào' WHERE id = %s", (id,))
+            conn.commit()
+            # print(f"FTP error: {e}")
+            return False
+
     def process(self, id, config_data):
         conn = psycopg2.connect(
             dbname=config_data['database']['database'],
@@ -1199,7 +1266,7 @@ class Preprocessing:
                 return_flag = preprocess.image_format_convert(conn, id, task_param, ftp)
             elif algorithm == "nang_cao_chat_luong":
                 return_flag = preprocess.enhance_image(conn, id, task_param, ftp)
-            elif algorithm == "hieu_chinh_vat_ly":
+            elif algorithm == "hieu_chinh_sai_so":
                 return_flag = preprocess.physical_error_correction(conn, id, task_param, ftp)
             elif algorithm == "hieu_chinh_vo_tuyen":
                 return_flag = preprocess.radiometric_correction(conn, id, task_param, ftp)
@@ -1209,6 +1276,8 @@ class Preprocessing:
                 return_flag = preprocess.gcp_correction(conn, id, task_param, ftp)
             elif algorithm == "hieu_chinh_do_cao":
                 return_flag = preprocess.dem_correction(conn, id, task_param, ftp)
+            elif algorithm == "nan_truc_giao":
+                return_flag = preprocess.orthogonal_correct(conn, id, task_param, ftp)
             cursor.close()
             if return_flag:
                 task_stat_value_holder['value'] = 1
