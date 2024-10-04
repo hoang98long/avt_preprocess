@@ -265,7 +265,8 @@ class Preprocessing_Image:
             merged_image = np.stack(resized_channels, axis=0)
             for output_format in output_formats:
                 if output_format in ['png', 'jpg']:
-                    merged_image_save = np.moveaxis(merged_image, 0, -1)
+                    if len(selected_channels) > 1:
+                        merged_image_save = np.moveaxis(merged_image, 0, -1)
                     if len(selected_channels) == 4:
                         merged_image_save = cv2.cvtColor(merged_image_save, cv2.COLOR_RGBA2BGR)
                     output_path_save = output_path + "." + output_format
