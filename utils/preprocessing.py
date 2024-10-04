@@ -151,7 +151,8 @@ class Preprocessing:
         input_file = input_file_arr[0]
         # print(input_file)
         do_tuong_phan = task_param['do_tuong_phan']
-        do_sang = task_param['do_sang']
+        # do_sang = task_param['do_sang']
+        do_sang = 0
         do_net = task_param['do_net']
         if do_tuong_phan == '':
             do_tuong_phan = 1.5
