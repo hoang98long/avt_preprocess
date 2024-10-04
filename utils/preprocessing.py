@@ -1136,7 +1136,7 @@ class Preprocessing:
                                "updated_at = %s WHERE id = %s", (get_time(), id,))
                 conn.commit()
                 return False
-            preprocess_image.dem_correction(local_file_path, local_file_path_dem, output_path)
+            preprocess_image.dem_correction(local_file_path, local_file_path_dem, output_path, lon_angle, lat_angle)
             result_image_name = output_path.split("/")[-1]
             ftp_dir = FTP_DEM_CORRECTION_IMAGE_PATH
             ftp.cwd(str(ftp_dir))

@@ -13,7 +13,7 @@ from scipy.optimize import least_squares
 from skimage.exposure import match_histograms
 from osgeo import gdal
 from rasterio.crs import CRS
-from rasterio.warp import reproject
+from rasterio.warp import reproject, calculate_default_transform
 
 
 def normalize_band(band):
@@ -424,7 +424,6 @@ class Preprocessing_Image:
         fx = 5000
         fy = 5000
 
-        # Read the TIFF image using rasterio to get the dimensions
         with rasterio.open(input_file) as src:
             width = src.width
             height = src.height
@@ -457,21 +456,53 @@ class Preprocessing_Image:
         # Stack the undistorted RGB and the IR channel back together
         img_undistorted = np.dstack((img_undistorted_rgb, ir_channel))
 
-        # Save the undistorted image as a 4-channel TIFF
+        # Define the target CRS (EPSG:4326)
+        dst_crs = 'EPSG:4326'
+
+        # Define the transform and reproject settings
+        outfile_temp = output_file[0:-4] + '_temp.tif'
         with rasterio.open(
-                output_file,
+                outfile_temp,
                 'w',
                 driver='GTiff',
                 height=img_undistorted.shape[0],
                 width=img_undistorted.shape[1],
                 count=4,  # Four channels: R, G, B, IR
-                dtype=img_undistorted.dtype
+                dtype=img_undistorted.dtype,
+                crs=src.crs,  # Using the source CRS initially
+                transform=src.transform
         ) as dst:
-            # Write each channel back to the TIFF file
+            # Write each channel to the TIFF
             dst.write(img_undistorted[:, :, 0], 1)  # Red channel
             dst.write(img_undistorted[:, :, 1], 2)  # Green channel
             dst.write(img_undistorted[:, :, 2], 3)  # Blue channel
             dst.write(img_undistorted[:, :, 3], 4)  # IR channel
+
+            # Now reproject the image to EPSG:4326
+            transform, width, height = calculate_default_transform(
+                src.crs, dst_crs, dst.width, dst.height, *dst.bounds)
+
+            with rasterio.open(
+                    output_file,
+                    'w',
+                    driver='GTiff',
+                    height=height,
+                    width=width,
+                    count=4,
+                    dtype=img_undistorted.dtype,
+                    crs=dst_crs,  # Set to EPSG:4326
+                    transform=transform
+            ) as dst_reprojected:
+                for i in range(1, 5):  # Loop through each channel
+                    reproject(
+                        source=rasterio.band(dst, i),
+                        destination=rasterio.band(dst_reprojected, i),
+                        src_transform=src.transform,
+                        src_crs=src.crs,
+                        dst_transform=transform,
+                        dst_crs=dst_crs,
+                        resampling=Resampling.nearest
+                    )
 
     def radiometric_correction(self, input_path, output_path, png_paths):
         with rasterio.open(input_path) as tiff_src:
@@ -555,12 +586,12 @@ class Preprocessing_Image:
 
     def dem_correction(self, aerial_image_path, dem_path, output_path, lon_angle, lat_angle):
         with rasterio.open(aerial_image_path) as source:
-            src_crs = "EPSG:4326"  # Hệ tọa độ của RPCs
+            src_crs = "EPSG:4326"  # Hệ tọa độ của RPCs (ảnh nguồn có CRS là EPSG:4326)
 
             # Lấy kích thước từ ảnh gốc
             src_width = source.width
             src_height = source.height
-            dst_crs = "EPSG:3857"
+            dst_crs = "EPSG:4326"  # Đảm bảo đầu ra có CRS là EPSG:4326
 
             # Optional keyword arguments to be passed to GDAL transformer
             kwargs = {
@@ -585,7 +616,7 @@ class Preprocessing_Image:
                     **kwargs
                 )
 
-            # Lưu kết quả ra file TIFF mới với kích thước và số kênh giống ảnh gốc
+            # Lưu kết quả ra file TIFF mới với hệ tọa độ EPSG:4326 và kích thước giống ảnh gốc
             new_tiff_path = output_path
             with rasterio.open(
                     new_tiff_path, 'w',
@@ -594,7 +625,7 @@ class Preprocessing_Image:
                     width=src_width,  # Chiều rộng lấy từ ảnh gốc
                     count=num_bands,  # Số lượng kênh giống ảnh gốc
                     dtype=destination.dtype,
-                    crs=dst_crs,
+                    crs=dst_crs,  # Đảm bảo CRS là EPSG:4326
                     transform=dst_transform
             ) as dst:
                 # Ghi tất cả các kênh vào file
@@ -610,19 +641,27 @@ class Preprocessing_Image:
             return False
 
     def orthogonal_correct(self, input_file, output_file, crs_string):
-        dst_crs = get_ortho_proj(crs_string)
+        dst_crs = get_ortho_proj(crs_string=crs_string)
+
+        # Mở file ảnh gốc 4 kênh (RGB và IR)
         dataset = rasterio.open(input_file)
-        orig_data = dataset.read()
+        orig_data = dataset.read()  # Đọc tất cả các kênh, kết quả là mảng (count, height, width)
+
+        # Tính toán transform và kích thước của ảnh khi reproject
         transform, width, height = rasterio.warp.calculate_default_transform(
             dataset.crs, dst_crs, dataset.width, dataset.height,
             left=dataset.bounds.left, right=dataset.bounds.right,
             top=dataset.bounds.top, bottom=dataset.bounds.bottom
         )
+
+        # Khởi tạo mảng ortho_data với kích thước tương tự và kiểu dữ liệu phù hợp
         ortho_data = np.zeros((dataset.count, height, width), dtype=orig_data.dtype)
+
+        # Reproject từng kênh của ảnh
         for i in range(1, dataset.count + 1):
             reproject(
-                source=orig_data[i - 1],
-                destination=ortho_data[i - 1],
+                source=orig_data[i - 1],  # Truy cập kênh thứ i (index 0-based)
+                destination=ortho_data[i - 1],  # Ghi kênh tương ứng
                 src_transform=dataset.transform,
                 src_crs=dataset.crs,
                 dst_transform=transform,
@@ -630,11 +669,13 @@ class Preprocessing_Image:
                 resampling=Resampling.bilinear,
                 dst_nodata=0
             )
+
+        # Lưu ortho_data thành tệp TIFF với đủ 4 kênh
         with rasterio.open(
                 output_file, 'w',
                 driver='GTiff',
                 height=height, width=width,
-                count=dataset.count,
+                count=dataset.count,  # Ghi đủ số kênh
                 dtype=ortho_data.dtype,
                 crs=dst_crs, transform=transform
         ) as dst:
