@@ -443,7 +443,7 @@ class Preprocessing:
             return False
         input_file = input_file_arr[0]
         mode = task_param['mode']
-        if mode == 'full':
+        if mode == 'full_image':
             polygon_coords = 0
         else:
             polygon = task_param['polygon']
