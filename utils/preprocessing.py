@@ -151,8 +151,10 @@ class Preprocessing:
         input_file = input_file_arr[0]
         # print(input_file)
         do_tuong_phan = task_param['do_tuong_phan']
-        do_sang = task_param['do_sang']
-        # do_sang = 0
+        try:
+            do_sang = task_param['do_sang']
+        except Exception:
+            do_sang = 0
         do_net = task_param['do_net']
         if do_tuong_phan == '':
             do_tuong_phan = 1.5
@@ -162,7 +164,7 @@ class Preprocessing:
             do_net = 5
         else:
             do_tuong_phan = float(do_tuong_phan)
-            do_sang = int(do_sang)
+            do_sang = float(do_sang)
             do_net = int(do_net)
         try:
             filename = input_file.split("/")[-1]
