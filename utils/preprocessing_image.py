@@ -266,7 +266,8 @@ class Preprocessing_Image:
             for output_format in output_formats:
                 if output_format in ['png', 'jpg']:
                     merged_image_save = np.moveaxis(merged_image, 0, -1)
-                    merged_image_save = cv2.cvtColor(merged_image_save, cv2.COLOR_RGBA2BGR)
+                    if len(selected_channels) == 4:
+                        merged_image_save = cv2.cvtColor(merged_image_save, cv2.COLOR_RGBA2BGR)
                     output_path_save = output_path + "." + output_format
                     if merged_image_save.dtype == np.float32 or merged_image_save.dtype == np.float64:
                         # Chuyển đổi dữ liệu từ float về int nếu cần
