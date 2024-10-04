@@ -240,14 +240,18 @@ class Preprocessing_Image:
     def image_format_convert(self, tiff_path, output_path, polygon_coords, selected_channels, new_resolution,
                              output_formats):
         with rasterio.open(tiff_path) as src:
-            polygon = Polygon(polygon_coords)
-            oriented_polygon = orient(polygon, sign=1.0)
-            out_image, out_transform = mask(src, [oriented_polygon], crop=True)
+            if polygon_coords == 0:
+                out_image = src.read(selected_channels)
+                out_transform = src.transform
+            else:
+                polygon = Polygon(polygon_coords)
+                oriented_polygon = orient(polygon, sign=1.0)
+                out_image, out_transform = mask(src, [oriented_polygon], crop=True)
+            # Resize image
             original_width = out_image.shape[2]
             original_height = out_image.shape[1]
             new_width = int(original_width * new_resolution)
             new_height = int(original_height * new_resolution)
-
             resized_channels = []
             for i in selected_channels:
                 resized_channel = np.empty((new_height, new_width), dtype=out_image.dtype)
@@ -261,33 +265,56 @@ class Preprocessing_Image:
                     resampling=Resampling.bilinear
                 )
                 resized_channels.append(resized_channel)
-
             merged_image = np.stack(resized_channels, axis=0)
             for output_format in output_formats:
                 if output_format in ['png', 'jpg']:
-                    if len(selected_channels) > 1:
-                        merged_image_save = np.moveaxis(merged_image, 0, -1)
-                    if len(selected_channels) == 4:
+                    merged_image_save = np.moveaxis(merged_image, 0, -1)
+                    # Handle the number of channels
+                    if merged_image_save.shape[2] == 1:  # Grayscale
+                        merged_image_save = merged_image_save[:, :, 0]
+                    elif merged_image_save.shape[2] == 2:  # 2 channels, need to convert to 3 or 4
+                        # Add a black channel to make it 3 channels (RGB)
+                        black_channel = np.zeros_like(merged_image_save[:, :, 0])
+                        merged_image_save = np.stack([merged_image_save[:, :, 0],
+                                                      black_channel,
+                                                      merged_image_save[:, :, 1]], axis=-1)
+                    elif merged_image_save.shape[2] == 4:
                         merged_image_save = cv2.cvtColor(merged_image_save, cv2.COLOR_RGBA2BGR)
                     output_path_save = output_path + "." + output_format
+                    # Convert to uint8 if needed
                     if merged_image_save.dtype == np.float32 or merged_image_save.dtype == np.float64:
-                        # Chuyển đổi dữ liệu từ float về int nếu cần
                         merged_image_save = (merged_image_save * 255).astype(np.uint8)
                     cv2.imwrite(output_path_save, merged_image_save)
-
-                elif output_format in ['8_bit']:
+                elif output_format == '8_bit':
                     output_path_save = output_path + "_8_bit.tif"
                     merged_image_8bit = (merged_image / merged_image.max() * 255).astype(np.uint8)
                     out_meta = src.meta.copy()
-                    out_meta.update({"dtype": 'uint8', "driver": "GTiff"})
+                    # Update the metadata to match the number of selected channels
+                    out_meta.update({
+                        "dtype": 'uint8',
+                        "driver": "GTiff",
+                        "count": len(selected_channels),  # Fix the count to match selected channels
+                        "height": new_height,
+                        "width": new_width,
+                        "transform": out_transform
+                    })
                     with rasterio.open(output_path_save, "w", **out_meta) as dest:
                         dest.write(merged_image_8bit)
-
-                elif output_format in ['16_bit']:
+                elif output_format == '16_bit':
                     output_path_save = output_path + "_16_bit.tif"
                     merged_image_16bit = (merged_image / merged_image.max() * 65535).astype(np.uint16)
                     out_meta = src.meta.copy()
-                    out_meta.update({"dtype": 'uint16', "driver": "GTiff"})
+
+                    # Update the metadata to match the number of selected channels and set 16-bit dtype
+                    out_meta.update({
+                        "dtype": 'uint16',
+                        "driver": "GTiff",
+                        "count": len(selected_channels),
+                        "height": new_height,
+                        "width": new_width,
+                        "transform": out_transform
+                    })
+
                     with rasterio.open(output_path_save, "w", **out_meta) as dest:
                         dest.write(merged_image_16bit)
                 else:
