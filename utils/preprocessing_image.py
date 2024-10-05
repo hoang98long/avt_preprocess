@@ -44,16 +44,18 @@ def polynomial_transform(params, src_points):
     return np.column_stack((x_new, y_new))
 
 
-def transform_image(img, params):
+def transform_image(img, params, output_size, offset_x, offset_y):
     a0, a1, a2, b0, b1, b2 = params
-    rows, cols = img.shape
-    map_x = np.zeros((rows, cols), dtype=np.float32)
-    map_y = np.zeros((rows, cols), dtype=np.float32)
+    # rows, cols = img.shape
+    map_x = np.zeros(output_size, dtype=np.float32)
+    map_y = np.zeros(output_size, dtype=np.float32)
 
-    for y in range(rows):
-        for x in range(cols):
-            new_x = a0 + a1 * x + a2 * y
-            new_y = b0 + b1 * x + b2 * y
+    for y in range(output_size[0]):
+        for x in range(output_size[1]):
+            orig_x = x + offset_x
+            orig_y = y + offset_y
+            new_x = a0 + a1 * orig_x + a2 * orig_y
+            new_y = b0 + b1 * orig_x + b2 * orig_y
             map_x[y, x] = new_x
             map_y[y, x] = new_y
 
@@ -555,61 +557,96 @@ class Preprocessing_Image:
             tiff_dst.write(adjusted_tiff)
 
     def geometric_correction(self, input_path, output_path, src_points, dst_points):
-        src_points = np.array(src_points, dtype=np.float32)
-        dst_points = np.array(dst_points, dtype=np.float32)
-        initial_guess = np.zeros(6)
-        result = least_squares(residuals, initial_guess, args=(src_points, dst_points))
-        params = result.x
         with rasterio.open(input_path) as src:
+            transform = src.transform
+            inv_transform = ~transform
+            src_points_pixel = [src.index(lon, lat) for lon, lat in src_points]
+            src_points_pixel = np.array(src_points_pixel, dtype=np.float32)
+            dst_points_pixel = [src.index(lon, lat) for lon, lat in dst_points]
+            dst_points_pixel = np.array(dst_points_pixel, dtype=np.float32)
+            initial_guess = np.zeros(6)
+            result = least_squares(residuals, initial_guess, args=(src_points_pixel, dst_points_pixel))
+            params = result.x
             num_channels = src.count
             height, width = src.height, src.width
             crs = src.crs
-            transform = src.transform
+            corners = np.array([
+                [0, 0],  # góc trên trái
+                [0, height],  # góc dưới trái
+                [width, 0],  # góc trên phải
+                [width, height]  # góc dưới phải
+            ], dtype=np.float32)
+            transformed_corners = polynomial_transform(params, corners)
+            polygon = Polygon(transformed_corners)
+            min_x, min_y, max_x, max_y = polygon.bounds
+            new_width = int(np.ceil(max_x - min_x))
+            new_height = int(np.ceil(max_y - min_y))
+            offset_x = int(np.floor(min_x))
+            offset_y = int(np.floor(min_y))
+            params[0] -= offset_x
+            params[3] -= offset_y
             channels = []
             for i in range(1, num_channels + 1):
                 channel_data = src.read(i)
-                corrected_channel = transform_image(channel_data, params)
+                corrected_channel = transform_image(channel_data, params, (new_height, new_width), offset_x, offset_y)
                 channels.append(corrected_channel)
         corrected_image = np.array(channels)
         new_metadata = {
             'driver': 'GTiff',
-            'count': num_channels,  #
-            'height': height,
-            'width': width,
+            'count': num_channels,
+            'height': new_height,
+            'width': new_width,
             'dtype': corrected_image.dtype,
             'crs': crs,
-            'transform': transform
+            'transform': transform * rasterio.Affine.translation(offset_x, offset_y)
         }
-
-        # Bước 3: Lưu ảnh TIFF với metadata mới
         with rasterio.open(output_path, 'w', **new_metadata) as dst:
             dst.write(corrected_image)
 
     def gcp_correction(self, input_path, output_path, src_points, dst_points):
-        src_points = np.array(src_points, dtype=np.float32)
-        dst_points = np.array(dst_points, dtype=np.float32)
-        initial_guess = np.zeros(6)
-        result = least_squares(residuals, initial_guess, args=(src_points, dst_points))
-        params = result.x
         with rasterio.open(input_path) as src:
+            transform = src.transform
+            inv_transform = ~transform
+            src_points_pixel = [src.index(lon, lat) for lon, lat in src_points]
+            src_points_pixel = np.array(src_points_pixel, dtype=np.float32)
+            dst_points_pixel = [src.index(lon, lat) for lon, lat in dst_points]
+            dst_points_pixel = np.array(dst_points_pixel, dtype=np.float32)
+            initial_guess = np.zeros(6)
+            result = least_squares(residuals, initial_guess, args=(src_points_pixel, dst_points_pixel))
+            params = result.x
             num_channels = src.count
             height, width = src.height, src.width
             crs = src.crs
-            transform = src.transform
+            corners = np.array([
+                [0, 0],  # góc trên trái
+                [0, height],  # góc dưới trái
+                [width, 0],  # góc trên phải
+                [width, height]  # góc dưới phải
+            ], dtype=np.float32)
+            transformed_corners = polynomial_transform(params, corners)
+            polygon = Polygon(transformed_corners)
+            min_x, min_y, max_x, max_y = polygon.bounds
+            new_width = int(np.ceil(max_x - min_x))
+            new_height = int(np.ceil(max_y - min_y))
+            offset_x = int(np.floor(min_x))
+            offset_y = int(np.floor(min_y))
+            params[0] -= offset_x
+            params[3] -= offset_y
+
             channels = []
             for i in range(1, num_channels + 1):
                 channel_data = src.read(i)
-                corrected_channel = transform_image(channel_data, params)
+                corrected_channel = transform_image(channel_data, params, (new_height, new_width), offset_x, offset_y)
                 channels.append(corrected_channel)
         corrected_image = np.array(channels)
         new_metadata = {
             'driver': 'GTiff',
-            'count': num_channels,  #
-            'height': height,
-            'width': width,
+            'count': num_channels,
+            'height': new_height,
+            'width': new_width,
             'dtype': corrected_image.dtype,
             'crs': crs,
-            'transform': transform
+            'transform': transform * rasterio.Affine.translation(offset_x, offset_y)
         }
         with rasterio.open(output_path, 'w', **new_metadata) as dst:
             dst.write(corrected_image)
