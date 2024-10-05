@@ -64,6 +64,7 @@ def transform_image(img, params):
 def get_ortho_proj(crs_string):
     return CRS.from_string(crs_string)
 
+
 class Preprocessing_Image:
     def __init__(self):
         pass
@@ -613,53 +614,60 @@ class Preprocessing_Image:
         with rasterio.open(output_path, 'w', **new_metadata) as dst:
             dst.write(corrected_image)
 
-    def dem_correction(self, aerial_image_path, dem_path, output_path, lon_angle, lat_angle):
+    def dem_correction(self, aerial_image_path, dem_path, output_path):
         with rasterio.open(aerial_image_path) as source:
-            src_crs = "EPSG:4326"  # Hệ tọa độ của RPCs (ảnh nguồn có CRS là EPSG:4326)
+            print("rpcs:")
+            print(source.rpcs)
+            src_crs = source.crs  # "EPSG:4326"  # This is the crs of the rpcs
 
-            # Lấy kích thước từ ảnh gốc
-            src_width = source.width
-            src_height = source.height
-            dst_crs = "EPSG:4326"  # Đảm bảo đầu ra có CRS là EPSG:4326
-
-            # Optional keyword arguments to be passed to GDAL transformer
             kwargs = {
                 'RPC_DEM': dem_path
             }
 
-            # Kiểm tra số lượng kênh (bands) của ảnh nguồn
-            num_bands = source.count
+            # pyplot.show()
+            # Destination: a 1024 x 1024 dataset in Web Mercator (EPSG:3857)
 
-            # Tạo mảng đầu ra cho ảnh đích với kích thước giống với ảnh gốc
-            destination = np.zeros((num_bands, src_height, src_width), dtype=np.uint8)
-
-            # Xử lý từng kênh của ảnh
-            for i in range(1, num_bands + 1):  # Duyệt qua các kênh từ 1 đến num_bands
-                _, dst_transform = reproject(
-                    rasterio.band(source, i),
-                    destination[i - 1],  # Chọn đúng kênh trong destination
-                    rpcs=source.rpcs,
-                    src_crs=src_crs,
-                    dst_crs=dst_crs,
-                    resampling=Resampling.nearest,
-                    **kwargs
-                )
-
-            # Lưu kết quả ra file TIFF mới với hệ tọa độ EPSG:4326 và kích thước giống ảnh gốc
-            new_tiff_path = output_path
-            with rasterio.open(
-                    new_tiff_path, 'w',
-                    driver='GTiff',
-                    height=src_height,  # Chiều cao lấy từ ảnh gốc
-                    width=src_width,  # Chiều rộng lấy từ ảnh gốc
-                    count=num_bands,  # Số lượng kênh giống ảnh gốc
-                    dtype=destination.dtype,
-                    crs=dst_crs,  # Đảm bảo CRS là EPSG:4326
-                    transform=dst_transform
-            ) as dst:
-                # Ghi tất cả các kênh vào file
-                for i in range(1, num_bands + 1):
-                    dst.write(destination[i - 1], i)  # Ghi từng kênh vào band tương ứng
+            dst_crs = "EPSG:3857"
+            destination_red = np.zeros((1024, 1024), dtype=np.uint8)
+            _, dst_transform = reproject(
+                rasterio.band(source, 1),
+                destination_red,
+                rpcs=source.rpcs,
+                src_crs=src_crs,
+                dst_crs=dst_crs,
+                resampling=Resampling.nearest,
+                **kwargs
+            )
+            destination_g = np.zeros((1024, 1024), dtype=np.uint8)
+            _, dst_transform = reproject(
+                rasterio.band(source, 2),
+                destination_g,
+                rpcs=source.rpcs,
+                src_crs=src_crs,
+                dst_crs=dst_crs,
+                resampling=Resampling.nearest,
+                **kwargs
+            )
+            destination_b = np.zeros((1024, 1024), dtype=np.uint8)
+            _, dst_transform = reproject(
+                rasterio.band(source, 3),
+                destination_b,
+                rpcs=source.rpcs,
+                src_crs=src_crs,
+                dst_crs=dst_crs,
+                resampling=Resampling.nearest,
+                **kwargs
+            )
+            profile = source.profile
+            profile.update(
+                dtype=rasterio.uint8,
+                count=3)
+            # show(destination, transform=dst_transform)
+            with rasterio.open(output_path, 'w', **profile) as dst:
+                dst.write(destination_red.astype(rasterio.uint8), 1)
+                dst.write(destination_g.astype(rasterio.uint8), 2)
+                dst.write(destination_b.astype(rasterio.uint8), 3)
+            assert destination_red.any()
 
     def dem_band_check(self, dem_path):
         with rasterio.open(dem_path) as src:

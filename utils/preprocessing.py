@@ -1090,8 +1090,8 @@ class Preprocessing:
     def dem_correction(self, conn, id, task_param, ftp):
         input_file_arr = task_param['input_file']
         input_file_dem_arr = task_param['input_file_dem']
-        lat_angle = float(task_param['lat_angle'])
-        lon_angle = float(task_param['lon_angle'])
+        # lat_angle = float(task_param['lat_angle'])
+        # lon_angle = float(task_param['lon_angle'])
         if len(input_file_arr) < 1:
             cursor = conn.cursor()
             route_to_db(cursor)
@@ -1143,7 +1143,7 @@ class Preprocessing:
                                "updated_at = %s WHERE id = %s", (get_time(), id,))
                 conn.commit()
                 return False
-            preprocess_image.dem_correction(local_file_path, local_file_path_dem, output_path, lon_angle, lat_angle)
+            preprocess_image.dem_correction(local_file_path, local_file_path_dem, output_path)
             result_image_name = output_path.split("/")[-1]
             ftp_dir = FTP_DEM_CORRECTION_IMAGE_PATH
             ftp.cwd(str(ftp_dir))
