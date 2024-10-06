@@ -828,6 +828,14 @@ class Preprocessing:
     def physical_error_correction(self, conn, id, task_param, ftp):
         input_file_arr = task_param['input_file']
         distortion_factor = float(task_param['distortion_factor'])
+        try:
+            focal_length_longitude = int(task_param['focal_length_longitude'])
+        except Exception:
+            focal_length_longitude = 0
+        try:
+            focal_length_latitude = int(task_param['focal_length_longitude'])
+        except Exception:
+            focal_length_latitude = 0
         if len(input_file_arr) < 1:
             cursor = conn.cursor()
             route_to_db(cursor)
@@ -858,7 +866,7 @@ class Preprocessing:
             output_image_name = "result_physical_correction_" + format(date_create) + ".tif"
             output_path = os.path.join(LOCAL_RESULT_PHYSICAL_CORRECTION_IMAGE_PATH, output_image_name)
             preprocess_image = Preprocessing_Image()
-            preprocess_image.physical_error_correction(local_file_path, output_path, distortion_factor)
+            preprocess_image.physical_error_correction(local_file_path, output_path, distortion_factor, focal_length_longitude, focal_length_latitude)
             result_image_name = output_path.split("/")[-1]
             ftp_dir = FTP_PHYSICAL_CORRECTION_IMAGE_PATH
             ftp.cwd(str(ftp_dir))

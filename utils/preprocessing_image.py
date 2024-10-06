@@ -449,12 +449,14 @@ class Preprocessing_Image:
                 cv2.imwrite(result_image_path + ".jpg", input_image)
         return result_image_path
 
-    def physical_error_correction(self, input_file, output_file, distortion_factor):
+    def physical_error_correction(self, input_file, output_file, distortion_factor, fx, fy):
         assert float(cv2.__version__.rsplit('.', 1)[0]) >= 3, 'OpenCV version 3 or newer required.'
 
         # Focal lengths fx and fy remain unchanged
-        fx = 5000
-        fy = 5000
+        if fx == 0:
+            fx = 5000
+        if fy == 0:
+            fy = 5000
 
         with rasterio.open(input_file) as src:
             width = src.width
