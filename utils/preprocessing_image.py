@@ -449,26 +449,30 @@ class Preprocessing_Image:
                 cv2.imwrite(result_image_path + ".jpg", input_image)
         return result_image_path
 
-    def physical_error_correction(self, input_file, output_file, distortion_factor, fx, fy):
+    def physical_error_correction(self, input_file, output_file, distortion_factor, focal_size_x, focal_size_y,
+                                  focal_length):
         assert float(cv2.__version__.rsplit('.', 1)[0]) >= 3, 'OpenCV version 3 or newer required.'
 
-        # Focal lengths fx and fy remain unchanged
-        if fx == 0:
-            fx = 5000
-        if fy == 0:
-            fy = 5000
+        if focal_length == 0:
+            focal_length = 1
+        if focal_size_x == 0:
+            focal_size_x = 5
+        if focal_size_y == 0:
+            focal_size_y = 5
+        focal_size_x = focal_size_x * 1000 / focal_length
+        focal_size_y = focal_size_y * 1000 / focal_length
 
         with rasterio.open(input_file) as src:
             width = src.width
             height = src.height
 
             # Calculate cx and cy based on the image dimensions
-            cx = (width - 1) / 2
-            cy = (height - 1) / 2
+            center_x = (width - 1) / 2
+            center_y = (height - 1) / 2
 
             # Construct the new intrinsic matrix K
-            K = np.array([[fx, 0., cx],
-                          [0., fy, cy],
+            K = np.array([[focal_size_x, 0., center_x],
+                          [0., focal_size_y, center_y],
                           [0., 0., 1]])
 
             # Read the first three channels (RGB)
@@ -655,8 +659,8 @@ class Preprocessing_Image:
 
     def dem_correction(self, aerial_image_path, dem_path, output_path):
         with rasterio.open(aerial_image_path) as source:
-            print("rpcs:")
-            print(source.rpcs)
+            # print("rpcs:")
+            # print(source.rpcs)
             src_crs = source.crs  # "EPSG:4326"  # This is the crs of the rpcs
 
             kwargs = {
