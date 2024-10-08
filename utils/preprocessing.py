@@ -829,15 +829,15 @@ class Preprocessing:
         input_file_arr = task_param['input_file']
         distortion_factor = float(task_param['distortion_factor'])
         try:
-            focal_matrix_size_x = int(task_param['focal_matrix_size_x'])
+            focal_matrix_size_x = float(task_param['focal_matrix_size_x'])
         except Exception:
             focal_matrix_size_x = 0
         try:
-            focal_matrix_size_y = int(task_param['focal_matrix_size_y'])
+            focal_matrix_size_y = float(task_param['focal_matrix_size_y'])
         except Exception:
             focal_matrix_size_y = 0
         try:
-            focal_length = int(task_param['focal_length'])
+            focal_length = float(task_param['focal_length'])
         except Exception:
             focal_length = 0
         if len(input_file_arr) < 1:
