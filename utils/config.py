@@ -56,3 +56,6 @@ LOCAL_DEM_IMAGE_PATH = 'images/dem_correction/dem/'
 
 LOCAL_SRC_ORTHOGONAL_CORRECT_IMAGE_PATH = 'images/orthogonal_correct/source/'
 LOCAL_RESULT_ORTHOGONAL_CORRECT_IMAGE_PATH = 'images/orthogonal_correct/result/'
+
+LOCAL_SRC_CONVERT_8_BIT_IMAGE_PATH = 'images/convert_8_bit/source/'
+LOCAL_RESULT_CONVERT_8_BIT_IMAGE_PATH = 'images/convert_8_bit/result/'

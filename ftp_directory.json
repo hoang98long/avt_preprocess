@@ -13,5 +13,6 @@
     "geometric_correct_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/hieu_chinh_dia_ly",
     "gcp_correct_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/hieu_chinh_diem_khong_che",
     "dem_correct_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/hieu_chinh_do_cao",
-    "orthogonal_correct_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/nan_truc_giao"
+    "orthogonal_correct_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/nan_truc_giao",
+    "convert_8_bit_result_directory": "/data/RASTER_PREPR/anh_tien_xu_ly/chuyen_doi_8_bit"
 }

@@ -27,6 +27,7 @@ FTP_GEOMETRIC_CORRECTION_IMAGE_PATH = ftp_directory['geometric_correct_result_di
 FTP_GCP_CORRECTION_IMAGE_PATH = ftp_directory['gcp_correct_result_directory']
 FTP_DEM_CORRECTION_IMAGE_PATH = ftp_directory['dem_correct_result_directory']
 FTP_ORTHOGONAL_CORRECT_IMAGE_PATH = ftp_directory['orthogonal_correct_result_directory']
+FTP_CONVERT_8_BIT_IMAGE_PATH = ftp_directory['convert_8_bit_result_directory']
 
 
 def connect_ftp(config_data):
@@ -1323,6 +1324,63 @@ class Preprocessing:
             # print(f"FTP error: {e}")
             return False
 
+    def convert_to_8_bit(self, conn, id, task_param, ftp):
+        input_file_arr = task_param['input_file']
+        if len(input_file_arr) < 1:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute(
+                "UPDATE avt_task SET task_stat = 0, task_message = 'Không có ảnh',"
+                "updated_at = %s WHERE id = %s", (get_time(), id))
+            conn.commit()
+            return False
+        input_file = input_file_arr[0]
+        try:
+            filename = input_file.split("/")[-1]
+            local_file_path = os.path.join(LOCAL_SRC_CONVERT_8_BIT_IMAGE_PATH, filename)
+            if not os.path.isfile(local_file_path):
+                download_file(ftp, input_file, local_file_path)
+            date_create = get_time_string()
+            output_image_name = "result_convert_8_bit" + format(date_create) + ".tif"
+            output_path = os.path.join(LOCAL_RESULT_CONVERT_8_BIT_IMAGE_PATH, output_image_name)
+            preprocess_image = Preprocessing_Image()
+            result_convert_value = preprocess_image.convert_to_8bit(local_file_path, output_path)
+            if result_convert_value == 0:
+                cursor = conn.cursor()
+                route_to_db(cursor)
+                cursor.execute(
+                    "UPDATE avt_task SET task_stat = 1, task_message = 'Ảnh đã có dạng 8 bit',"
+                    "updated_at = %s WHERE id = %s", (get_time(), id))
+                conn.commit()
+                return True
+            result_image_name = output_path.split("/")[-1]
+            ftp_dir = FTP_CONVERT_8_BIT_IMAGE_PATH
+            ftp.cwd(str(ftp_dir))
+            save_dir = ftp_dir + "/" + result_image_name
+            task_output = str({
+                "output_image": [save_dir]
+            }).replace("'", "\"")
+            with open(output_path, "rb") as file:
+                ftp.storbinary(f"STOR {save_dir}", file)
+            ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            # owner_group = 'avtadmin:avtadmin'
+            # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
+            # ftp.sendcmd(chown_command)
+            # print("Connection closed")
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
+                           (task_output, get_time(), id,))
+            conn.commit()
+            return True
+        except ftplib.all_errors as e:
+            cursor = conn.cursor()
+            route_to_db(cursor)
+            cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Lỗi đầu vào' WHERE id = %s", (id,))
+            conn.commit()
+            # print(f"FTP error: {e}")
+            return False
+
     def process(self, id, config_data):
         conn = psycopg2.connect(
             dbname=config_data['database']['database'],
@@ -1374,6 +1432,8 @@ class Preprocessing:
                 return_flag = preprocess.dem_correction(conn, id, task_param, ftp)
             elif algorithm == "nan_truc_giao":
                 return_flag = preprocess.orthogonal_correct(conn, id, task_param, ftp)
+            elif algorithm == "chuyen_doi_8bit":
+                return_flag = preprocess.convert_to_8_bit(conn, id, task_param, ftp)
             cursor.close()
             if return_flag:
                 task_stat_value_holder['value'] = 1
