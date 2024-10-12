@@ -198,6 +198,14 @@ class Preprocessing:
             with open(output_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
+            output_path_histogram = os.path.join(LOCAL_RESULT_ENHANCE_IMAGE_PATH, output_image_name_histogram)
+            preprocess_image.get_histogram(output_path, output_path_histogram)
+            result_image_name_histogram = output_path_histogram.split("/")[-1]
+            save_dir_histogram = ftp_dir + "/" + result_image_name_histogram
+            with open(output_path_histogram, "rb") as file_histogram:
+                ftp.storbinary(f"STOR {save_dir_histogram}", file_histogram)
+            ftp.sendcmd(f'SITE CHMOD 775 {save_dir_histogram}')
             # owner_group = 'avtadmin:avtadmin'
             # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
             # ftp.sendcmd(chown_command)
@@ -253,6 +261,14 @@ class Preprocessing:
             with open(output_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
+            output_path_histogram = os.path.join(LOCAL_RESULT_ENHANCE_IMAGE_PATH, output_image_name_histogram)
+            preprocess_image.get_histogram(output_path, output_path_histogram)
+            result_image_name_histogram = output_path_histogram.split("/")[-1]
+            save_dir_histogram = ftp_dir + "/" + result_image_name_histogram
+            with open(output_path_histogram, "rb") as file_histogram:
+                ftp.storbinary(f"STOR {save_dir_histogram}", file_histogram)
+            ftp.sendcmd(f'SITE CHMOD 775 {save_dir_histogram}')
             # owner_group = 'avtadmin:avtadmin'
             # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
             # ftp.sendcmd(chown_command)
@@ -807,6 +823,14 @@ class Preprocessing:
             with open(output_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
+            output_path_histogram = os.path.join(LOCAL_RESULT_ILLUM_CORRECT_IMAGE_PATH, output_image_name_histogram)
+            preprocess_image.get_histogram(output_path, output_path_histogram)
+            result_image_name_histogram = output_path_histogram.split("/")[-1]
+            save_dir_histogram = ftp_dir + "/" + result_image_name_histogram
+            with open(output_path_histogram, "rb") as file_histogram:
+                ftp.storbinary(f"STOR {save_dir_histogram}", file_histogram)
+            ftp.sendcmd(f'SITE CHMOD 775 {save_dir_histogram}')
             # owner_group = 'avtadmin:avtadmin'
             # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
             # ftp.sendcmd(chown_command)
@@ -881,6 +905,14 @@ class Preprocessing:
             with open(output_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
+            output_path_histogram = os.path.join(LOCAL_RESULT_PHYSICAL_CORRECTION_IMAGE_PATH, output_image_name_histogram)
+            preprocess_image.get_histogram(output_path, output_path_histogram)
+            result_image_name_histogram = output_path_histogram.split("/")[-1]
+            save_dir_histogram = ftp_dir + "/" + result_image_name_histogram
+            with open(output_path_histogram, "rb") as file_histogram:
+                ftp.storbinary(f"STOR {save_dir_histogram}", file_histogram)
+            ftp.sendcmd(f'SITE CHMOD 775 {save_dir_histogram}')
             # owner_group = 'avtadmin:avtadmin'
             # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
             # ftp.sendcmd(chown_command)
@@ -951,6 +983,15 @@ class Preprocessing:
             with open(output_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
+            output_path_histogram = os.path.join(LOCAL_RESULT_RADIOMETRIC_CORRECTION_IMAGE_PATH,
+                                                 output_image_name_histogram)
+            preprocess_image.get_histogram(output_path, output_path_histogram)
+            result_image_name_histogram = output_path_histogram.split("/")[-1]
+            save_dir_histogram = ftp_dir + "/" + result_image_name_histogram
+            with open(output_path_histogram, "rb") as file_histogram:
+                ftp.storbinary(f"STOR {save_dir_histogram}", file_histogram)
+            ftp.sendcmd(f'SITE CHMOD 775 {save_dir_histogram}')
             # owner_group = 'avtadmin:avtadmin'
             # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
             # ftp.sendcmd(chown_command)
@@ -1016,6 +1057,15 @@ class Preprocessing:
             with open(output_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
+            output_path_histogram = os.path.join(LOCAL_RESULT_GEOMETRIC_CORRECTION_IMAGE_PATH,
+                                                 output_image_name_histogram)
+            preprocess_image.get_histogram(output_path, output_path_histogram)
+            result_image_name_histogram = output_path_histogram.split("/")[-1]
+            save_dir_histogram = ftp_dir + "/" + result_image_name_histogram
+            with open(output_path_histogram, "rb") as file_histogram:
+                ftp.storbinary(f"STOR {save_dir_histogram}", file_histogram)
+            ftp.sendcmd(f'SITE CHMOD 775 {save_dir_histogram}')
             # owner_group = 'avtadmin:avtadmin'
             # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
             # ftp.sendcmd(chown_command)
@@ -1081,6 +1131,15 @@ class Preprocessing:
             with open(output_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
+            output_path_histogram = os.path.join(LOCAL_RESULT_GCP_CORRECTION_IMAGE_PATH,
+                                                 output_image_name_histogram)
+            preprocess_image.get_histogram(output_path, output_path_histogram)
+            result_image_name_histogram = output_path_histogram.split("/")[-1]
+            save_dir_histogram = ftp_dir + "/" + result_image_name_histogram
+            with open(output_path_histogram, "rb") as file_histogram:
+                ftp.storbinary(f"STOR {save_dir_histogram}", file_histogram)
+            ftp.sendcmd(f'SITE CHMOD 775 {save_dir_histogram}')
             # owner_group = 'avtadmin:avtadmin'
             # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
             # ftp.sendcmd(chown_command)
@@ -1166,6 +1225,15 @@ class Preprocessing:
             with open(output_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
+            output_path_histogram = os.path.join(LOCAL_RESULT_DEM_CORRECTION_IMAGE_PATH,
+                                                 output_image_name_histogram)
+            preprocess_image.get_histogram(output_path, output_path_histogram)
+            result_image_name_histogram = output_path_histogram.split("/")[-1]
+            save_dir_histogram = ftp_dir + "/" + result_image_name_histogram
+            with open(output_path_histogram, "rb") as file_histogram:
+                ftp.storbinary(f"STOR {save_dir_histogram}", file_histogram)
+            ftp.sendcmd(f'SITE CHMOD 775 {save_dir_histogram}')
             # owner_group = 'avtadmin:avtadmin'
             # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
             # ftp.sendcmd(chown_command)
@@ -1228,6 +1296,15 @@ class Preprocessing:
             with open(output_path, "rb") as file:
                 ftp.storbinary(f"STOR {save_dir}", file)
             ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+            output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
+            output_path_histogram = os.path.join(LOCAL_RESULT_ORTHOGONAL_CORRECT_IMAGE_PATH,
+                                                 output_image_name_histogram)
+            preprocess_image.get_histogram(output_path, output_path_histogram)
+            result_image_name_histogram = output_path_histogram.split("/")[-1]
+            save_dir_histogram = ftp_dir + "/" + result_image_name_histogram
+            with open(output_path_histogram, "rb") as file_histogram:
+                ftp.storbinary(f"STOR {save_dir_histogram}", file_histogram)
+            ftp.sendcmd(f'SITE CHMOD 775 {save_dir_histogram}')
             # owner_group = 'avtadmin:avtadmin'
             # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
             # ftp.sendcmd(chown_command)

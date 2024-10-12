@@ -14,6 +14,7 @@ from skimage.exposure import match_histograms
 from osgeo import gdal
 from rasterio.crs import CRS
 from rasterio.warp import reproject, calculate_default_transform
+import matplotlib.pyplot as plt
 
 
 def normalize_band(band):
@@ -837,3 +838,18 @@ class Preprocessing_Image:
                 crs=dst_crs, transform=transform
         ) as dst:
             dst.write(ortho_data)
+
+    def get_histogram(self, image_path, output_path):
+        image = cv2.imread(image_path)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        colors = ('red', 'green', 'blue')
+        channels = cv2.split(image)
+        plt.figure(figsize=(10, 6))
+        for channel, color in zip(channels, colors):
+            histogram = cv2.calcHist([channel], [0], None, [256], [0, 256])
+            plt.plot(histogram, color=color, label=f'{color.capitalize()}')
+        plt.xlabel("Pixel Value")
+        plt.ylabel("Frequency")
+        plt.legend()
+        plt.savefig(output_path, format='jpg')
+        plt.close()
