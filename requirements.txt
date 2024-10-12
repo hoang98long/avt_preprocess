@@ -7,4 +7,4 @@ schedule==1.2.2
 scipy
 scikit-image
 scikit-learn
-matplotlib==3.9.2
+matplotlib
