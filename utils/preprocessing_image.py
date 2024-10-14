@@ -77,23 +77,35 @@ class Preprocessing_Image:
                                    [-1, 5, -1],
                                    [0, -1, 0]])
         with rasterio.open(input_path) as src:
-            img = src.read([1, 2, 3])
+            num_bands = src.count
             metadata = src.meta
-        img = np.transpose(img, (1, 2, 0))
-        img = img.astype(np.uint8)
-        img = cv2.convertScaleAbs(img, alpha=ALPHA, beta=BETA)
-        img = cv2.filter2D(img, -1, SHARPEN_KERNEL)
-        img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-        img_hsv[:, :, 2] = cv2.equalizeHist(img_hsv[:, :, 2])
-        img_result = cv2.cvtColor(img_hsv, cv2.COLOR_HSV2RGB)
-        img_result = np.transpose(img_result, (2, 0, 1))
-        metadata.update({
-            'driver': 'GTiff',
-            'height': img_result.shape[1],
-            'width': img_result.shape[2],
-            'count': img_result.shape[0],  # Số kênh
-            'dtype': img_result.dtype
-        })
+            if num_bands >= 3:
+                img = src.read([1, 2, 3])
+                img = np.transpose(img, (1, 2, 0))
+                img = img.astype(np.uint8)
+                img = cv2.convertScaleAbs(img, alpha=ALPHA, beta=BETA)
+                img = cv2.filter2D(img, -1, SHARPEN_KERNEL)
+
+                # Chuyển sang không gian HSV để cân bằng histogram
+                img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+                img_hsv[:, :, 2] = cv2.equalizeHist(img_hsv[:, :, 2])
+                img_result = cv2.cvtColor(img_hsv, cv2.COLOR_HSV2RGB)
+                img_result = np.transpose(img_result, (2, 0, 1))
+            elif num_bands == 1:
+                img = src.read(1)
+                img = img.astype(np.uint8)
+                img = cv2.convertScaleAbs(img, alpha=ALPHA, beta=BETA)
+                img = cv2.filter2D(img, -1, SHARPEN_KERNEL)
+                img_result = cv2.equalizeHist(img)
+                img_result = np.expand_dims(img_result, axis=0)
+
+            metadata.update({
+                'driver': 'GTiff',
+                'height': img_result.shape[1],
+                'width': img_result.shape[2],
+                'count': img_result.shape[0],
+                'dtype': img_result.dtype
+            })
         with rasterio.open(output_path, 'w', **metadata) as dst:
             dst.write(img_result)
 
