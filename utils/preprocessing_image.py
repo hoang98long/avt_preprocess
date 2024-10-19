@@ -636,21 +636,28 @@ class Preprocessing_Image:
         with rasterio.open(input_path) as tiff_src:
             tiff_img = tiff_src.read()
             profile = tiff_src.profile
-        rgb_channels = tiff_img[:3]
-        ir_channel = tiff_img[3]
-        png_histograms = []
-        for png_path in png_paths:
-            png_img = cv2.imread(png_path)
-            png_img_rgb = cv2.cvtColor(png_img, cv2.COLOR_BGR2RGB)
-            png_histograms.append(png_img_rgb)
-        png_histograms = np.array(png_histograms)
-        median_histogram = np.median(png_histograms, axis=0).astype(np.uint8)
-        adjusted_rgb = np.zeros_like(rgb_channels, dtype=np.uint8)
-        for channel in range(3):
-            adjusted_rgb[channel] = match_histograms(rgb_channels[channel], median_histogram[:, :, channel])
-        adjusted_tiff = np.vstack((adjusted_rgb, np.expand_dims(ir_channel, axis=0)))
-        with rasterio.open(output_path, 'w', **profile) as tiff_dst:
-            tiff_dst.write(adjusted_tiff)
+            num_channels = tiff_img.shape[0]
+        if num_channels == 1:
+            single_channel_img = tiff_img[0]
+            adjusted_single_channel = match_histograms(single_channel_img,
+                                                       cv2.imread(png_paths[0], cv2.IMREAD_GRAYSCALE))
+            with rasterio.open(output_path, 'w', **profile) as tiff_dst:
+                tiff_dst.write(adjusted_single_channel, 1)
+        else:
+            rgb_channels = tiff_img[:3]
+            ir_channel = tiff_img[3]
+            png_histograms = []
+            for png_path in png_paths:
+                png_img = cv2.imread(png_path)
+                png_histograms.append(png_img)
+            png_histograms = np.array(png_histograms)
+            median_histogram = np.median(png_histograms, axis=0).astype(np.uint8)
+            adjusted_rgb = np.zeros_like(rgb_channels, dtype=np.uint8)
+            for channel in range(3):
+                adjusted_rgb[channel] = match_histograms(rgb_channels[channel], median_histogram[:, :, channel])
+            adjusted_tiff = np.vstack((adjusted_rgb, np.expand_dims(ir_channel, axis=0)))
+            with rasterio.open(output_path, 'w', **profile) as tiff_dst:
+                tiff_dst.write(adjusted_tiff)
 
     def geometric_correction(self, input_path, output_path, src_points, dst_points):
         with rasterio.open(input_path) as src:
