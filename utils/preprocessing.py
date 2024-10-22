@@ -432,6 +432,14 @@ class Preprocessing:
                 with open(output_path, "rb") as file:
                     ftp.storbinary(f"STOR {save_dir}", file)
                 ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
+                output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
+                output_path_histogram = os.path.join(LOCAL_RESULT_MERGE_CHANNEL_PATH, output_image_name_histogram)
+                preprocess_image.get_histogram(output_path, output_path_histogram)
+                result_image_name_histogram = output_path_histogram.split("/")[-1]
+                save_dir_histogram = ftp_dir + "/" + result_image_name_histogram
+                with open(output_path_histogram, "rb") as file_histogram:
+                    ftp.storbinary(f"STOR {save_dir_histogram}", file_histogram)
+                ftp.sendcmd(f'SITE CHMOD 775 {save_dir_histogram}')
                 # owner_group = 'avtadmin:avtadmin'
                 # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
                 # ftp.sendcmd(chown_command)
@@ -1341,7 +1349,7 @@ class Preprocessing:
             if not os.path.isfile(local_file_path):
                 download_file(ftp, input_file, local_file_path)
             date_create = get_time_string()
-            output_image_name = "result_convert_8_bit" + format(date_create) + ".tif"
+            output_image_name = "result_convert_8_bit_" + format(date_create) + ".tif"
             output_path = os.path.join(LOCAL_RESULT_CONVERT_8_BIT_IMAGE_PATH, output_image_name)
             preprocess_image = Preprocessing_Image()
             result_convert_value = preprocess_image.convert_to_8bit(local_file_path, output_path)

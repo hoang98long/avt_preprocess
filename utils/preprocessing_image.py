@@ -862,17 +862,21 @@ class Preprocessing_Image:
         with rasterio.open(input_path) as src:
             profile = src.profile
             dtype = src.dtypes[0]
+            nodata = src.nodata
             if dtype == 'uint8':
                 return 0
             image = src.read()
             min_val = image.min()
             max_val = image.max()
             image_8bit = ((image - min_val) / (max_val - min_val) * 255).astype(np.uint8)
-            profile.update(dtype=rasterio.uint8)
+            profile.update(dtype=rasterio.uint8, nodata=0)
+            if nodata is not None:
+                image_8bit[image == nodata] = 0
+
         with rasterio.open(output_path, 'w', **profile) as dst:
             dst.write(image_8bit)
-        return 1
 
+        return 1
 
     def get_histogram(self, image_path, output_path):
         image = cv2.imread(image_path)
