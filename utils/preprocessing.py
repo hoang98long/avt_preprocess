@@ -426,9 +426,6 @@ class Preprocessing:
                 ftp_dir = FTP_MERGE_CHANNEL_PATH
                 ftp.cwd(str(ftp_dir))
                 save_dir = ftp_dir + "/" + output_image_name
-                task_output = str({
-                    "output_image": [save_dir]
-                }).replace("'", "\"")
                 with open(output_path, "rb") as file:
                     ftp.storbinary(f"STOR {save_dir}", file)
                 ftp.sendcmd(f'SITE CHMOD 775 {save_dir}')
@@ -444,6 +441,10 @@ class Preprocessing:
                 # chown_command = f'SITE CHOWN {owner_group} {save_dir}'
                 # ftp.sendcmd(chown_command)
                 # print("Connection closed")
+                task_output = str({
+                    "output_image": [save_dir],
+                    "output_image_histogram": [save_dir_histogram]
+                }).replace("'", "\"")
                 cursor = conn.cursor()
                 route_to_db(cursor)
                 cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, updated_at = %s WHERE id = %s",
