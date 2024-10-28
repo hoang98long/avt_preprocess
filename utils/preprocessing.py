@@ -393,34 +393,34 @@ class Preprocessing:
             output_path = os.path.join(LOCAL_RESULT_MERGE_CHANNEL_PATH, output_image_name)
             preprocess_image = Preprocessing_Image()
             channel_check = preprocess_image.band_check(local_file_path)
-            if channel_check == 0:
+            if channel_check < 4:
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Chưa đủ kênh phổ', updated_at = %s "
-                               "WHERE id = %s", (get_time(), id,))
+                cursor.execute("UPDATE avt_task SET task_stat = 1, task_message = 'Ảnh có %s kênh phổ', updated_at = %s "
+                               "WHERE id = %s", (channel_check, get_time(), id,))
                 conn.commit()
-                return False
-            elif channel_check == 1:
+                return True
+            elif channel_check == 11:
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Kênh phổ hồng ngoại bị lặp từ kênh "
+                cursor.execute("UPDATE avt_task SET task_stat = 1, task_message = 'Kênh phổ hồng ngoại bị lặp từ kênh "
                                "ảnh 1', updated_at = %s WHERE id = %s", (get_time(), id,))
                 conn.commit()
-                return False
-            elif channel_check == 2:
+                return True
+            elif channel_check == 22:
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Kênh phổ hồng ngoại bị lặp từ kênh "
+                cursor.execute("UPDATE avt_task SET task_stat = 1, task_message = 'Kênh phổ hồng ngoại bị lặp từ kênh "
                                "ảnh 2', updated_at = %s WHERE id = %s", (get_time(), id,))
                 conn.commit()
-                return False
-            elif channel_check == 3:
+                return True
+            elif channel_check == 33:
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Kênh phổ hồng ngoại bị lặp từ kênh "
+                cursor.execute("UPDATE avt_task SET task_stat = 1, task_message = 'Kênh phổ hồng ngoại bị lặp từ kênh "
                                "ảnh 3', updated_at = %s WHERE id = %s", (get_time(), id,))
                 conn.commit()
-                return False
+                return True
             else:
                 preprocess_image.merge_channel(local_file_path, output_path, selected_channels)
                 ftp_dir = FTP_MERGE_CHANNEL_PATH

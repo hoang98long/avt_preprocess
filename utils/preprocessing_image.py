@@ -115,16 +115,16 @@ class Preprocessing_Image:
             ir_channel = channels[-1]
             rgb_channels = channels[:-1]
             if len(channels) < 4:
-                return 0  # Thiếu kênh phổ
+                return len(channels)
             for i in range(len(channels)):
                 for j in range(i + 1, len(channels)):
                     if np.array_equal(channels[i], channels[j]):
                         if i == 0:
-                            return 1  # Có trùng lặp kênh phổ 1
+                            return 11  # Có trùng lặp kênh phổ 1
                         elif i == 1:
-                            return 2  # Có trùng lặp kênh phổ 2
+                            return 22  # Có trùng lặp kênh phổ 2
                         else:
-                            return 3  # Có trùng lặp kênh phổ 3
+                            return 33  # Có trùng lặp kênh phổ 3
         return 10  # Đủ kênh phổ
 
     def preprocess_no_ir(self, tiff_image_path, output_path):
@@ -539,8 +539,7 @@ class Preprocessing_Image:
                 cv2.imwrite(result_image_path + ".jpg", input_image)
         return result_image_path
 
-    def physical_error_correction(self, input_file, output_file, distortion_factor, focal_size_x, focal_size_y,
-                                  focal_length):
+    def physical_error_correction(self, input_file, output_file, distortion_factor, focal_size_x, focal_size_y, focal_length):
         assert float(cv2.__version__.rsplit('.', 1)[0]) >= 3, 'OpenCV version 3 or newer required.'
 
         if focal_length == 0:
@@ -553,62 +552,41 @@ class Preprocessing_Image:
         focal_size_y = focal_size_y * 1000 / focal_length
 
         with rasterio.open(input_file) as src:
-            width = src.width
-            height = src.height
+            width, height, num_channels = src.width, src.height, src.count
+            center_x, center_y = (width - 1) / 2, (height - 1) / 2
+            K = np.array([[focal_size_x, 0., center_x], [0., focal_size_y, center_y], [0., 0., 1]])
 
-            # Calculate cx and cy based on the image dimensions
-            center_x = (width - 1) / 2
-            center_y = (height - 1) / 2
+            if num_channels >= 3:
+                rgb_image = src.read([1, 2, 3]).transpose(1, 2, 0)
+                ir_channel = src.read(4) if num_channels > 3 else np.zeros((height, width), dtype=rgb_image.dtype)
+            else:
+                single_channel = src.read(1)
+                rgb_image = np.stack([single_channel] * 3, axis=-1)
+                ir_channel = single_channel
 
-            # Construct the new intrinsic matrix K
-            K = np.array([[focal_size_x, 0., center_x],
-                          [0., focal_size_y, center_y],
-                          [0., 0., 1]])
-
-            # Read the first three channels (RGB)
-            rgb_image = src.read([1, 2, 3]).transpose(1, 2, 0)
-
-            # Read the IR channel
-            ir_channel = src.read(4)
-
-        # Zero distortion coefficients
         D = np.array([0., 0., 0., 0.])
-
-        # Use Knew to scale the output
         Knew = K.copy()
         Knew[(0, 1), (0, 1)] = distortion_factor * Knew[(0, 1), (0, 1)]
-
-        # Apply fisheye undistortion to the RGB channels
         img_undistorted_rgb = cv2.fisheye.undistortImage(rgb_image, K, D=D, Knew=Knew)
-
-        # Stack the undistorted RGB and the IR channel back together
         img_undistorted = np.dstack((img_undistorted_rgb, ir_channel))
-
-        # Define the target CRS (EPSG:4326)
         dst_crs = 'EPSG:4326'
-
-        # Define the transform and reproject settings
         outfile_temp = output_file[0:-4] + '_temp.tif'
+
         with rasterio.open(
                 outfile_temp,
                 'w',
                 driver='GTiff',
                 height=img_undistorted.shape[0],
                 width=img_undistorted.shape[1],
-                count=4,  # Four channels: R, G, B, IR
+                count=4,
                 dtype=img_undistorted.dtype,
-                crs=src.crs,  # Using the source CRS initially
+                crs=src.crs,
                 transform=src.transform
         ) as dst:
-            # Write each channel to the TIFF
-            dst.write(img_undistorted[:, :, 0], 1)  # Red channel
-            dst.write(img_undistorted[:, :, 1], 2)  # Green channel
-            dst.write(img_undistorted[:, :, 2], 3)  # Blue channel
-            dst.write(img_undistorted[:, :, 3], 4)  # IR channel
+            for i in range(4):
+                dst.write(img_undistorted[:, :, i], i + 1)
 
-            # Now reproject the image to EPSG:4326
-            transform, width, height = calculate_default_transform(
-                src.crs, dst_crs, dst.width, dst.height, *dst.bounds)
+            transform, width, height = calculate_default_transform(src.crs, dst_crs, dst.width, dst.height, *dst.bounds)
 
             with rasterio.open(
                     output_file,
@@ -618,10 +596,10 @@ class Preprocessing_Image:
                     width=width,
                     count=4,
                     dtype=img_undistorted.dtype,
-                    crs=dst_crs,  # Set to EPSG:4326
+                    crs=dst_crs,
                     transform=transform
             ) as dst_reprojected:
-                for i in range(1, 5):  # Loop through each channel
+                for i in range(1, 5):
                     reproject(
                         source=rasterio.band(dst, i),
                         destination=rasterio.band(dst_reprojected, i),
@@ -735,7 +713,6 @@ class Preprocessing_Image:
             offset_y = int(np.floor(min_y))
             params[0] -= offset_x
             params[3] -= offset_y
-
             channels = []
             for i in range(1, num_channels + 1):
                 channel_data = src.read(i)
