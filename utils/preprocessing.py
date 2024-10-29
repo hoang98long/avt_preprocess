@@ -1020,7 +1020,7 @@ class Preprocessing:
             # print(f"FTP error: {e}")
             return False
 
-    def geometric_correction(self, conn, id, task_param, ftp):
+    def geometric_correction(self, conn, id, task_param, ftp, config_data):
         input_file_arr = task_param['input_file']
         if len(input_file_arr) < 1:
             cursor = conn.cursor()
@@ -1059,6 +1059,7 @@ class Preprocessing:
             preprocess_image.geometric_correction(local_file_path, output_path, src_points, dst_points)
             result_image_name = output_path.split("/")[-1]
             ftp_dir = FTP_GEOMETRIC_CORRECTION_IMAGE_PATH
+            ftp = connect_ftp(config_data)
             ftp.cwd(str(ftp_dir))
             save_dir = ftp_dir + "/" + result_image_name
             task_output = str({
@@ -1094,7 +1095,7 @@ class Preprocessing:
             # print(f"FTP error: {e}")
             return False
 
-    def gcp_correction(self, conn, id, task_param, ftp):
+    def gcp_correction(self, conn, id, task_param, ftp, config_data):
         input_file_arr = task_param['input_file']
         if len(input_file_arr) < 1:
             cursor = conn.cursor()
@@ -1133,6 +1134,7 @@ class Preprocessing:
             preprocess_image.gcp_correction(local_file_path, output_path, src_points, dst_points)
             result_image_name = output_path.split("/")[-1]
             ftp_dir = FTP_GCP_CORRECTION_IMAGE_PATH
+            ftp = connect_ftp(config_data)
             ftp.cwd(str(ftp_dir))
             save_dir = ftp_dir + "/" + result_image_name
             task_output = str({
@@ -1434,9 +1436,9 @@ class Preprocessing:
             elif algorithm == "hieu_chinh_vo_tuyen":
                 return_flag = preprocess.radiometric_correction(conn, id, task_param, ftp)
             elif algorithm == "hieu_chinh_dia_ly":
-                return_flag = preprocess.geometric_correction(conn, id, task_param, ftp)
+                return_flag = preprocess.geometric_correction(conn, id, task_param, ftp, config_data)
             elif algorithm == "hieu_chinh_diem_khong_che":
-                return_flag = preprocess.gcp_correction(conn, id, task_param, ftp)
+                return_flag = preprocess.gcp_correction(conn, id, task_param, ftp,config_data)
             elif algorithm == "hieu_chinh_do_cao":
                 return_flag = preprocess.dem_correction(conn, id, task_param, ftp)
             elif algorithm == "nan_truc_giao":
