@@ -396,7 +396,7 @@ class Preprocessing:
             if channel_check == 1:
                 output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
                 output_path_histogram = os.path.join(LOCAL_RESULT_MERGE_CHANNEL_PATH, output_image_name_histogram)
-                preprocess_image.get_histogram(output_path, output_path_histogram)
+                preprocess_image.get_histogram(local_file_path, output_path_histogram)
                 result_image_name_histogram = output_path_histogram.split("/")[-1]
                 ftp_dir = FTP_MERGE_CHANNEL_PATH
                 ftp.cwd(str(ftp_dir))
