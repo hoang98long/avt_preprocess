@@ -394,45 +394,132 @@ class Preprocessing:
             preprocess_image = Preprocessing_Image()
             channel_check = preprocess_image.band_check(local_file_path)
             if channel_check == 1:
+                output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
+                output_path_histogram = os.path.join(LOCAL_SRC_MERGE_CHANNEL_PATH, output_image_name_histogram)
+                preprocess_image.get_histogram(output_path, output_path_histogram)
+                result_image_name_histogram = output_path_histogram.split("/")[-1]
+                ftp_dir = FTP_MERGE_CHANNEL_PATH
+                ftp.cwd(str(ftp_dir))
+                save_dir_histogram = ftp_dir + "/" + result_image_name_histogram
+                with open(output_path_histogram, "rb") as file_histogram:
+                    ftp.storbinary(f"STOR {save_dir_histogram}", file_histogram)
+                ftp.sendcmd(f'SITE CHMOD 775 {save_dir_histogram}')
+                task_output = str({
+                    "output_image": [input_file],
+                    "output_image_histogram": [save_dir_histogram]
+                }).replace("'", "\"")
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 1, task_message = 'Ảnh có 1 kênh phổ', updated_at = "
-                               "%s WHERE id = %s", (get_time(), id,))
+                cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, task_message = 'Ảnh có 1 kênh "
+                               "phổ', updated_at = %s WHERE id = %s", (task_output, get_time(), id,))
                 conn.commit()
                 return True
             elif channel_check == 2:
+                output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
+                output_path_histogram = os.path.join(LOCAL_SRC_MERGE_CHANNEL_PATH, output_image_name_histogram)
+                preprocess_image.get_histogram(output_path, output_path_histogram)
+                result_image_name_histogram = output_path_histogram.split("/")[-1]
+                ftp_dir = FTP_MERGE_CHANNEL_PATH
+                ftp.cwd(str(ftp_dir))
+                save_dir_histogram = ftp_dir + "/" + result_image_name_histogram
+                with open(output_path_histogram, "rb") as file_histogram:
+                    ftp.storbinary(f"STOR {save_dir_histogram}", file_histogram)
+                ftp.sendcmd(f'SITE CHMOD 775 {save_dir_histogram}')
+                task_output = str({
+                    "output_image": [input_file],
+                    "output_image_histogram": [save_dir_histogram]
+                }).replace("'", "\"")
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 1, task_message = 'Ảnh có 2 kênh phổ', updated_at = "
-                               "%s WHERE id = %s", (get_time(), id,))
+                cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, task_message = 'Ảnh có 2 kênh "
+                               "phổ', updated_at = %s WHERE id = %s", (task_output, get_time(), id,))
                 conn.commit()
                 return True
             elif channel_check == 3:
+                output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
+                output_path_histogram = os.path.join(LOCAL_SRC_MERGE_CHANNEL_PATH, output_image_name_histogram)
+                preprocess_image.get_histogram(output_path, output_path_histogram)
+                result_image_name_histogram = output_path_histogram.split("/")[-1]
+                ftp_dir = FTP_MERGE_CHANNEL_PATH
+                ftp.cwd(str(ftp_dir))
+                save_dir_histogram = ftp_dir + "/" + result_image_name_histogram
+                with open(output_path_histogram, "rb") as file_histogram:
+                    ftp.storbinary(f"STOR {save_dir_histogram}", file_histogram)
+                ftp.sendcmd(f'SITE CHMOD 775 {save_dir_histogram}')
+                task_output = str({
+                    "output_image": [input_file],
+                    "output_image_histogram": [save_dir_histogram]
+                }).replace("'", "\"")
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 1, task_message = 'Ảnh có 3 kênh phổ', updated_at = "
-                               "%s WHERE id = %s", (get_time(), id,))
+                cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, task_message = 'Ảnh có 3 kênh "
+                               "phổ', updated_at = %s WHERE id = %s", (task_output, get_time(), id,))
                 conn.commit()
                 return True
             elif channel_check == 11:
+                output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
+                output_path_histogram = os.path.join(LOCAL_SRC_MERGE_CHANNEL_PATH, output_image_name_histogram)
+                preprocess_image.get_histogram(output_path, output_path_histogram)
+                result_image_name_histogram = output_path_histogram.split("/")[-1]
+                ftp_dir = FTP_MERGE_CHANNEL_PATH
+                ftp.cwd(str(ftp_dir))
+                save_dir_histogram = ftp_dir + "/" + result_image_name_histogram
+                with open(output_path_histogram, "rb") as file_histogram:
+                    ftp.storbinary(f"STOR {save_dir_histogram}", file_histogram)
+                ftp.sendcmd(f'SITE CHMOD 775 {save_dir_histogram}')
+                task_output = str({
+                    "output_image": [input_file],
+                    "output_image_histogram": [save_dir_histogram]
+                }).replace("'", "\"")
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 1, task_message = 'Kênh phổ hồng ngoại bị lặp từ kênh "
-                               "ảnh 1', updated_at = %s WHERE id = %s", (get_time(), id,))
+                cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, task_message = 'Kênh phổ hồng "
+                               "ngoại bị lặp từ kênh ảnh 1', updated_at = %s WHERE id = %s", (task_output,
+                                                                                              get_time(), id,))
                 conn.commit()
                 return True
             elif channel_check == 22:
+                output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
+                output_path_histogram = os.path.join(LOCAL_SRC_MERGE_CHANNEL_PATH, output_image_name_histogram)
+                preprocess_image.get_histogram(output_path, output_path_histogram)
+                result_image_name_histogram = output_path_histogram.split("/")[-1]
+                ftp_dir = FTP_MERGE_CHANNEL_PATH
+                ftp.cwd(str(ftp_dir))
+                save_dir_histogram = ftp_dir + "/" + result_image_name_histogram
+                with open(output_path_histogram, "rb") as file_histogram:
+                    ftp.storbinary(f"STOR {save_dir_histogram}", file_histogram)
+                ftp.sendcmd(f'SITE CHMOD 775 {save_dir_histogram}')
+                task_output = str({
+                    "output_image": [input_file],
+                    "output_image_histogram": [save_dir_histogram]
+                }).replace("'", "\"")
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 1, task_message = 'Kênh phổ hồng ngoại bị lặp từ kênh "
-                               "ảnh 2', updated_at = %s WHERE id = %s", (get_time(), id,))
+                cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, task_message = 'Kênh phổ hồng "
+                               "ngoại bị lặp từ kênh ảnh 2', updated_at = %s WHERE id = %s", (task_output,
+                                                                                              get_time(), id,))
                 conn.commit()
                 return True
             elif channel_check == 33:
+                output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
+                output_path_histogram = os.path.join(LOCAL_SRC_MERGE_CHANNEL_PATH, output_image_name_histogram)
+                preprocess_image.get_histogram(output_path, output_path_histogram)
+                result_image_name_histogram = output_path_histogram.split("/")[-1]
+                ftp_dir = FTP_MERGE_CHANNEL_PATH
+                ftp.cwd(str(ftp_dir))
+                save_dir_histogram = ftp_dir + "/" + result_image_name_histogram
+                with open(output_path_histogram, "rb") as file_histogram:
+                    ftp.storbinary(f"STOR {save_dir_histogram}", file_histogram)
+                ftp.sendcmd(f'SITE CHMOD 775 {save_dir_histogram}')
+                task_output = str({
+                    "output_image": [input_file],
+                    "output_image_histogram": [save_dir_histogram]
+                }).replace("'", "\"")
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 1, task_message = 'Kênh phổ hồng ngoại bị lặp từ kênh "
-                               "ảnh 3', updated_at = %s WHERE id = %s", (get_time(), id,))
+                cursor.execute("UPDATE avt_task SET task_stat = 1, task_output = %s, task_message = 'Kênh phổ hồng "
+                               "ngoại bị lặp từ kênh ảnh 3', updated_at = %s WHERE id = %s", (task_output,
+                                                                                              get_time(), id,))
                 conn.commit()
                 return True
             else:
