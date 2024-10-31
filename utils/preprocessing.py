@@ -395,7 +395,7 @@ class Preprocessing:
             channel_check = preprocess_image.band_check(local_file_path)
             if channel_check == 1:
                 output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
-                output_path_histogram = os.path.join(LOCAL_SRC_MERGE_CHANNEL_PATH, output_image_name_histogram)
+                output_path_histogram = os.path.join(LOCAL_RESULT_MERGE_CHANNEL_PATH, output_image_name_histogram)
                 preprocess_image.get_histogram(output_path, output_path_histogram)
                 result_image_name_histogram = output_path_histogram.split("/")[-1]
                 ftp_dir = FTP_MERGE_CHANNEL_PATH
@@ -416,8 +416,8 @@ class Preprocessing:
                 return True
             elif channel_check == 2:
                 output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
-                output_path_histogram = os.path.join(LOCAL_SRC_MERGE_CHANNEL_PATH, output_image_name_histogram)
-                preprocess_image.get_histogram(output_path, output_path_histogram)
+                output_path_histogram = os.path.join(LOCAL_RESULT_MERGE_CHANNEL_PATH, output_image_name_histogram)
+                preprocess_image.get_histogram(local_file_path, output_path_histogram)
                 result_image_name_histogram = output_path_histogram.split("/")[-1]
                 ftp_dir = FTP_MERGE_CHANNEL_PATH
                 ftp.cwd(str(ftp_dir))
@@ -437,8 +437,8 @@ class Preprocessing:
                 return True
             elif channel_check == 3:
                 output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
-                output_path_histogram = os.path.join(LOCAL_SRC_MERGE_CHANNEL_PATH, output_image_name_histogram)
-                preprocess_image.get_histogram(output_path, output_path_histogram)
+                output_path_histogram = os.path.join(LOCAL_RESULT_MERGE_CHANNEL_PATH, output_image_name_histogram)
+                preprocess_image.get_histogram(local_file_path, output_path_histogram)
                 result_image_name_histogram = output_path_histogram.split("/")[-1]
                 ftp_dir = FTP_MERGE_CHANNEL_PATH
                 ftp.cwd(str(ftp_dir))
@@ -458,8 +458,8 @@ class Preprocessing:
                 return True
             elif channel_check == 11:
                 output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
-                output_path_histogram = os.path.join(LOCAL_SRC_MERGE_CHANNEL_PATH, output_image_name_histogram)
-                preprocess_image.get_histogram(output_path, output_path_histogram)
+                output_path_histogram = os.path.join(LOCAL_RESULT_MERGE_CHANNEL_PATH, output_image_name_histogram)
+                preprocess_image.get_histogram(local_file_path, output_path_histogram)
                 result_image_name_histogram = output_path_histogram.split("/")[-1]
                 ftp_dir = FTP_MERGE_CHANNEL_PATH
                 ftp.cwd(str(ftp_dir))
@@ -480,8 +480,8 @@ class Preprocessing:
                 return True
             elif channel_check == 22:
                 output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
-                output_path_histogram = os.path.join(LOCAL_SRC_MERGE_CHANNEL_PATH, output_image_name_histogram)
-                preprocess_image.get_histogram(output_path, output_path_histogram)
+                output_path_histogram = os.path.join(LOCAL_RESULT_MERGE_CHANNEL_PATH, output_image_name_histogram)
+                preprocess_image.get_histogram(local_file_path, output_path_histogram)
                 result_image_name_histogram = output_path_histogram.split("/")[-1]
                 ftp_dir = FTP_MERGE_CHANNEL_PATH
                 ftp.cwd(str(ftp_dir))
@@ -502,8 +502,8 @@ class Preprocessing:
                 return True
             elif channel_check == 33:
                 output_image_name_histogram = output_image_name[0:-4] + "_histogram.jpg"
-                output_path_histogram = os.path.join(LOCAL_SRC_MERGE_CHANNEL_PATH, output_image_name_histogram)
-                preprocess_image.get_histogram(output_path, output_path_histogram)
+                output_path_histogram = os.path.join(LOCAL_RESULT_MERGE_CHANNEL_PATH, output_image_name_histogram)
+                preprocess_image.get_histogram(local_file_path, output_path_histogram)
                 result_image_name_histogram = output_path_histogram.split("/")[-1]
                 ftp_dir = FTP_MERGE_CHANNEL_PATH
                 ftp.cwd(str(ftp_dir))
