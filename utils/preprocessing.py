@@ -393,11 +393,25 @@ class Preprocessing:
             output_path = os.path.join(LOCAL_RESULT_MERGE_CHANNEL_PATH, output_image_name)
             preprocess_image = Preprocessing_Image()
             channel_check = preprocess_image.band_check(local_file_path)
-            if channel_check < 4:
+            if channel_check == 1:
                 cursor = conn.cursor()
                 route_to_db(cursor)
-                cursor.execute("UPDATE avt_task SET task_stat = 1, task_message = 'Ảnh có %s kênh phổ', updated_at = %s "
-                               "WHERE id = %s", (channel_check, get_time(), id,))
+                cursor.execute("UPDATE avt_task SET task_stat = 1, task_message = 'Ảnh có 1 kênh phổ', updated_at = "
+                               "%s WHERE id = %s", (get_time(), id,))
+                conn.commit()
+                return True
+            elif channel_check == 2:
+                cursor = conn.cursor()
+                route_to_db(cursor)
+                cursor.execute("UPDATE avt_task SET task_stat = 1, task_message = 'Ảnh có 2 kênh phổ', updated_at = "
+                               "%s WHERE id = %s", (get_time(), id,))
+                conn.commit()
+                return True
+            elif channel_check == 3:
+                cursor = conn.cursor()
+                route_to_db(cursor)
+                cursor.execute("UPDATE avt_task SET task_stat = 1, task_message = 'Ảnh có 3 kênh phổ', updated_at = "
+                               "%s WHERE id = %s", (get_time(), id,))
                 conn.commit()
                 return True
             elif channel_check == 11:
