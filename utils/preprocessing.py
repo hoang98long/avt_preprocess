@@ -579,7 +579,7 @@ class Preprocessing:
             polygon_coords = ast.literal_eval(polygon)[0]
         selected_channels = ast.literal_eval(task_param['selected_channels'])
         new_resolution = float(task_param['new_resolution'])
-        output_formats = ast.literal_eval(task_param['output_formats'])
+        output_formats = [ext.lower() for ext in task_param['output_formats']]
         try:
             filename = input_file.split("/")[-1]
             local_file_path = LOCAL_SRC_FORMAT_CONVERT_PATH + filename
