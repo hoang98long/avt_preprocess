@@ -571,12 +571,15 @@ class Preprocessing:
             conn.commit()
             return False
         input_file = input_file_arr[0]
-        mode = task_param['mode']
-        if mode == 'full_image':
+        try:
+            mode = task_param['mode']
+            if mode == 'full_image':
+                polygon_coords = 0
+            else:
+                polygon = task_param['polygon']
+                polygon_coords = ast.literal_eval(polygon)[0]
+        except Exception:
             polygon_coords = 0
-        else:
-            polygon = task_param['polygon']
-            polygon_coords = ast.literal_eval(polygon)[0]
         selected_channels = ast.literal_eval(task_param['selected_channels'])
         new_resolution = float(task_param['new_resolution'])
         output_formats = [ext.lower() for ext in task_param['output_formats']]
