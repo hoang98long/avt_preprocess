@@ -4,6 +4,7 @@ from datetime import datetime
 from utils.convert_to_tiff import convert_to_tiff
 from utils.config import *
 import rasterio
+from rasterio import windows
 from rasterio.mask import mask
 from shapely.geometry import Polygon
 from shapely.geometry.polygon import orient
@@ -47,12 +48,13 @@ def polynomial_transform(params, src_points):
 
 def transform_image(img, params, output_size, offset_x, offset_y):
     a0, a1, a2, b0, b1, b2 = params
-    # rows, cols = img.shape
+    rows, cols = img.shape
     map_x = np.zeros(output_size, dtype=np.float32)
     map_y = np.zeros(output_size, dtype=np.float32)
 
     for y in range(output_size[0]):
         for x in range(output_size[1]):
+            # Điều chỉnh lại vị trí dựa trên offset
             orig_x = x + offset_x
             orig_y = y + offset_y
             new_x = a0 + a1 * orig_x + a2 * orig_y
@@ -62,6 +64,12 @@ def transform_image(img, params, output_size, offset_x, offset_y):
 
     corrected_img = cv2.remap(img, map_x, map_y, cv2.INTER_LINEAR)
     return corrected_img
+
+
+def expand_extent(raster, extent, fill_value=None):
+    window = snap(windows.from_bounds(*extent, raster.transform))
+    data = raster.read(window=window, boundless=True, fill_value=fill_value)
+    return data, windows.transform(window, raster.transform)
 
 
 def get_ortho_proj(crs_string):
@@ -645,8 +653,12 @@ class Preprocessing_Image:
             src_points_pixel = np.array(src_points_pixel, dtype=np.float32)
             dst_points_pixel = [src.index(lon, lat) for lon, lat in dst_points]
             dst_points_pixel = np.array(dst_points_pixel, dtype=np.float32)
+            src_points_pixel = np.flip(src_points_pixel, 1)
+            dst_points_pixel = np.flip(dst_points_pixel, 1)
+            # src_points_pixel = np.array([[0,0],[5000,0],[0,2600]])
+            # dst_points_pixel = np.array( [[0,0],[5000,0],[100,2600]])
             initial_guess = np.zeros(6)
-            result = least_squares(residuals, initial_guess, args=(src_points_pixel, dst_points_pixel))
+            result = least_squares(residuals, initial_guess, args=(dst_points_pixel, src_points_pixel))
             params = result.x
             num_channels = src.count
             height, width = src.height, src.width
@@ -657,19 +669,34 @@ class Preprocessing_Image:
                 [width, 0],  # góc trên phải
                 [width, height]  # góc dưới phải
             ], dtype=np.float32)
+
             transformed_corners = polynomial_transform(params, corners)
+            # transformed_corners = np.flip(dst_points_pixel,1)
+            # approx_dst = polynomial_transform(params,src_points_pixel)
+            # print(dst_points_pixel)
+            # print(approx_dst)
             polygon = Polygon(transformed_corners)
+            polygon_origin = Polygon(corners)
             min_x, min_y, max_x, max_y = polygon.bounds
+            min_x0, min_y0, max_x0, max_y0 = polygon_origin.bounds
+            if (min_x > min_x0):
+                min_x = min_x0
+            if (min_y > min_y0):
+                min_y = min_y0
+            if (max_x < max_x0):
+                max_x = max_x0
+            if (max_y < max_y0):
+                max_y = max_y0
             new_width = int(np.ceil(max_x - min_x))
             new_height = int(np.ceil(max_y - min_y))
             offset_x = int(np.floor(min_x))
             offset_y = int(np.floor(min_y))
-            params[0] -= offset_x
-            params[3] -= offset_y
+            # params[0] -= offset_x
+            # params[3] -= offset_y
             channels = []
             for i in range(1, num_channels + 1):
                 channel_data = src.read(i)
-                corrected_channel = transform_image(channel_data, params, (new_height, new_width), offset_x, offset_y)
+                corrected_channel = transform_image(channel_data, params, (new_height, new_width), 0, 0)
                 channels.append(corrected_channel)
         corrected_image = np.array(channels)
         new_metadata = {
@@ -679,7 +706,8 @@ class Preprocessing_Image:
             'width': new_width,
             'dtype': corrected_image.dtype,
             'crs': crs,
-            'transform': transform * rasterio.Affine.translation(offset_x, offset_y)
+            'transform': transform
+
         }
         with rasterio.open(output_path, 'w', **new_metadata) as dst:
             dst.write(corrected_image)
@@ -692,8 +720,12 @@ class Preprocessing_Image:
             src_points_pixel = np.array(src_points_pixel, dtype=np.float32)
             dst_points_pixel = [src.index(lon, lat) for lon, lat in dst_points]
             dst_points_pixel = np.array(dst_points_pixel, dtype=np.float32)
+            src_points_pixel = np.flip(src_points_pixel, 1)
+            dst_points_pixel = np.flip(dst_points_pixel, 1)
+            # src_points_pixel = np.array([[0,0],[5000,0],[0,2600]])
+            # dst_points_pixel = np.array( [[0,0],[5000,0],[100,2600]])
             initial_guess = np.zeros(6)
-            result = least_squares(residuals, initial_guess, args=(src_points_pixel, dst_points_pixel))
+            result = least_squares(residuals, initial_guess, args=(dst_points_pixel, src_points_pixel))
             params = result.x
             num_channels = src.count
             height, width = src.height, src.width
@@ -704,19 +736,34 @@ class Preprocessing_Image:
                 [width, 0],  # góc trên phải
                 [width, height]  # góc dưới phải
             ], dtype=np.float32)
+
             transformed_corners = polynomial_transform(params, corners)
+            # transformed_corners = np.flip(dst_points_pixel,1)
+            # approx_dst = polynomial_transform(params,src_points_pixel)
+            # print(dst_points_pixel)
+            # print(approx_dst)
             polygon = Polygon(transformed_corners)
+            polygon_origin = Polygon(corners)
             min_x, min_y, max_x, max_y = polygon.bounds
+            min_x0, min_y0, max_x0, max_y0 = polygon_origin.bounds
+            if (min_x > min_x0):
+                min_x = min_x0
+            if (min_y > min_y0):
+                min_y = min_y0
+            if (max_x < max_x0):
+                max_x = max_x0
+            if (max_y < max_y0):
+                max_y = max_y0
             new_width = int(np.ceil(max_x - min_x))
             new_height = int(np.ceil(max_y - min_y))
             offset_x = int(np.floor(min_x))
             offset_y = int(np.floor(min_y))
-            params[0] -= offset_x
-            params[3] -= offset_y
+            # params[0] -= offset_x
+            # params[3] -= offset_y
             channels = []
             for i in range(1, num_channels + 1):
                 channel_data = src.read(i)
-                corrected_channel = transform_image(channel_data, params, (new_height, new_width), offset_x, offset_y)
+                corrected_channel = transform_image(channel_data, params, (new_height, new_width), 0, 0)
                 channels.append(corrected_channel)
         corrected_image = np.array(channels)
         new_metadata = {
@@ -726,7 +773,8 @@ class Preprocessing_Image:
             'width': new_width,
             'dtype': corrected_image.dtype,
             'crs': crs,
-            'transform': transform * rasterio.Affine.translation(offset_x, offset_y)
+            'transform': transform
+
         }
         with rasterio.open(output_path, 'w', **new_metadata) as dst:
             dst.write(corrected_image)
