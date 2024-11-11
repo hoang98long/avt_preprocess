@@ -689,8 +689,8 @@ class Preprocessing_Image:
                 max_y = max_y0
             new_width = int(np.ceil(max_x - min_x))
             new_height = int(np.ceil(max_y - min_y))
-            offset_x = int(np.floor(min_x))
-            offset_y = int(np.floor(min_y))
+            # offset_x = int(np.floor(min_x))
+            # offset_y = int(np.floor(min_y))
             # params[0] -= offset_x
             # params[3] -= offset_y
             channels = []
@@ -756,8 +756,8 @@ class Preprocessing_Image:
                 max_y = max_y0
             new_width = int(np.ceil(max_x - min_x))
             new_height = int(np.ceil(max_y - min_y))
-            offset_x = int(np.floor(min_x))
-            offset_y = int(np.floor(min_y))
+            # offset_x = int(np.floor(min_x))
+            # offset_y = int(np.floor(min_y))
             # params[0] -= offset_x
             # params[3] -= offset_y
             channels = []
