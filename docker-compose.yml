@@ -8,4 +8,4 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     command: bash -c "source activate avt_preprocess && cd /app/avt_preprocess && python main.py --config_file /app/config.json"
-    restart: unless-stopped
+    restart: always
