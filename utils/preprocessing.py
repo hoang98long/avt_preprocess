@@ -139,7 +139,7 @@ class Preprocessing:
     def __init__(self):
         pass
 
-    def enhance_image(self, conn, id, task_param, ftp):
+    def enhance_image(self, conn, id, task_param, ftp, config_data):
         input_file_arr = task_param['input_file']
         if len(input_file_arr) < 1:
             cursor = conn.cursor()
@@ -191,6 +191,7 @@ class Preprocessing:
             preprocess_image.enhance_image(local_file_path, output_path, do_tuong_phan, do_sang, do_net)
             result_image_name = output_path.split("/")[-1]
             ftp_dir = FTP_ENHANCE_IMAGE_PATH
+            ftp = connect_ftp(config_data)
             ftp.cwd(str(ftp_dir))
             save_dir = ftp_dir + "/" + result_image_name
             task_output = str({
@@ -225,7 +226,7 @@ class Preprocessing:
             # print(f"FTP error: {e}")
             return False
 
-    def automatic_enhance_image(self, conn, id, task_param, ftp):
+    def automatic_enhance_image(self, conn, id, task_param, ftp, config_data):
         input_file = task_param['input_file'][0]
         do_tuong_phan = 1.5
         do_sang = 0
@@ -254,6 +255,7 @@ class Preprocessing:
             preprocess_image.enhance_image(local_file_path, output_path, do_tuong_phan, do_sang, do_net)
             result_image_name = output_path.split("/")[-1]
             ftp_dir = FTP_ENHANCE_IMAGE_PATH
+            ftp = connect_ftp(config_data)
             ftp.cwd(str(ftp_dir))
             save_dir = ftp_dir + "/" + result_image_name
             task_output = str({
@@ -288,7 +290,7 @@ class Preprocessing:
             # print(f"FTP error: {e}")
             return False
 
-    def check_and_merge_ir(self, conn, id, task_param, ftp):
+    def check_and_merge_ir(self, conn, id, task_param, ftp, config_data):
         input_file = task_param['input_file'][0]
         input_file_ir = task_param['input_file_ir'][0]
         try:
@@ -332,6 +334,7 @@ class Preprocessing:
             else:
                 preprocess_image.preprocess_ir(local_file_path, input_file_ir, output_path)
                 ftp_dir = FTP_MERGE_IR_PATH
+                ftp = connect_ftp(config_data)
                 ftp.cwd(str(ftp_dir))
                 save_dir = ftp_dir + "/" + output_image_name
                 task_output = str({
@@ -358,7 +361,7 @@ class Preprocessing:
             # print(f"FTP error: {e}")
             return False
 
-    def merge_channel(self, conn, id, task_param, ftp):
+    def merge_channel(self, conn, id, task_param, ftp, config_data):
         input_file_arr = task_param['input_file']
         if len(input_file_arr) < 1:
             cursor = conn.cursor()
@@ -399,6 +402,7 @@ class Preprocessing:
                 preprocess_image.get_histogram(local_file_path, output_path_histogram)
                 result_image_name_histogram = output_path_histogram.split("/")[-1]
                 ftp_dir = FTP_MERGE_CHANNEL_PATH
+                ftp = connect_ftp(config_data)
                 ftp.cwd(str(ftp_dir))
                 save_dir_histogram = ftp_dir + "/" + result_image_name_histogram
                 with open(output_path_histogram, "rb") as file_histogram:
@@ -420,6 +424,7 @@ class Preprocessing:
                 preprocess_image.get_histogram(local_file_path, output_path_histogram)
                 result_image_name_histogram = output_path_histogram.split("/")[-1]
                 ftp_dir = FTP_MERGE_CHANNEL_PATH
+                ftp = connect_ftp(config_data)
                 ftp.cwd(str(ftp_dir))
                 save_dir_histogram = ftp_dir + "/" + result_image_name_histogram
                 with open(output_path_histogram, "rb") as file_histogram:
@@ -441,6 +446,7 @@ class Preprocessing:
                 preprocess_image.get_histogram(local_file_path, output_path_histogram)
                 result_image_name_histogram = output_path_histogram.split("/")[-1]
                 ftp_dir = FTP_MERGE_CHANNEL_PATH
+                ftp = connect_ftp(config_data)
                 ftp.cwd(str(ftp_dir))
                 save_dir_histogram = ftp_dir + "/" + result_image_name_histogram
                 with open(output_path_histogram, "rb") as file_histogram:
@@ -462,6 +468,7 @@ class Preprocessing:
                 preprocess_image.get_histogram(local_file_path, output_path_histogram)
                 result_image_name_histogram = output_path_histogram.split("/")[-1]
                 ftp_dir = FTP_MERGE_CHANNEL_PATH
+                ftp = connect_ftp(config_data)
                 ftp.cwd(str(ftp_dir))
                 save_dir_histogram = ftp_dir + "/" + result_image_name_histogram
                 with open(output_path_histogram, "rb") as file_histogram:
@@ -484,6 +491,7 @@ class Preprocessing:
                 preprocess_image.get_histogram(local_file_path, output_path_histogram)
                 result_image_name_histogram = output_path_histogram.split("/")[-1]
                 ftp_dir = FTP_MERGE_CHANNEL_PATH
+                ftp = connect_ftp(config_data)
                 ftp.cwd(str(ftp_dir))
                 save_dir_histogram = ftp_dir + "/" + result_image_name_histogram
                 with open(output_path_histogram, "rb") as file_histogram:
@@ -506,6 +514,7 @@ class Preprocessing:
                 preprocess_image.get_histogram(local_file_path, output_path_histogram)
                 result_image_name_histogram = output_path_histogram.split("/")[-1]
                 ftp_dir = FTP_MERGE_CHANNEL_PATH
+                ftp = connect_ftp(config_data)
                 ftp.cwd(str(ftp_dir))
                 save_dir_histogram = ftp_dir + "/" + result_image_name_histogram
                 with open(output_path_histogram, "rb") as file_histogram:
@@ -525,6 +534,7 @@ class Preprocessing:
             else:
                 preprocess_image.merge_channel(local_file_path, output_path, selected_channels)
                 ftp_dir = FTP_MERGE_CHANNEL_PATH
+                ftp = connect_ftp(config_data)
                 ftp.cwd(str(ftp_dir))
                 save_dir = ftp_dir + "/" + output_image_name
                 with open(output_path, "rb") as file:
@@ -560,7 +570,7 @@ class Preprocessing:
             # print(f"FTP error: {e}")
             return False
 
-    def image_format_convert(self, conn, id, task_param, ftp):
+    def image_format_convert(self, conn, id, task_param, ftp, config_data):
         input_file_arr = task_param['input_file']
         if len(input_file_arr) < 1:
             cursor = conn.cursor()
@@ -595,6 +605,7 @@ class Preprocessing:
             preprocess_image.image_format_convert(local_file_path, output_path, polygon_coords,
                                                   selected_channels, new_resolution, output_formats)
             ftp_dir = FTP_FORMAT_CONVERT_PATH + "/" + output_image_name
+            ftp = connect_ftp(config_data)
             check_and_create_directory(ftp, ftp_dir)
             ftp.sendcmd(f'SITE CHMOD 775 {ftp_dir}')
             ftp.cwd(str(ftp_dir))
@@ -757,7 +768,7 @@ class Preprocessing:
     #         # print(f"FTP error: {e}")
     #         return False
 
-    def sharpen_image(self, conn, id, task_param, ftp):
+    def sharpen_image(self, conn, id, task_param, ftp, config_data):
         ORG_input_file = task_param['input_file'][0]
         PAN_input_file = task_param['input_file_single_band'][0]
         try:
@@ -773,6 +784,7 @@ class Preprocessing:
             result_image_path = preprocess_image.sharpen_image(local_org_file_path, local_pan_file_path)
             result_image_name = result_image_path.split("/")[-1]
             ftp_dir = FTP_SHARPEN_IMAGE_PATH
+            ftp = connect_ftp(config_data)
             ftp.cwd(str(ftp_dir))
             save_dir = ftp_dir + "/" + result_image_name
             task_output = str({
@@ -799,7 +811,7 @@ class Preprocessing:
             # print(f"FTP error: {e}")
             return False
 
-    def adjust_gamma(self, conn, id, task_param, ftp):
+    def adjust_gamma(self, conn, id, task_param, ftp, config_data):
         input_file_arr = task_param['input_file']
         if len(input_file_arr) < 1:
             cursor = conn.cursor()
@@ -820,6 +832,7 @@ class Preprocessing:
             result_image_path = preprocess_image.adjust_gamma(local_file_path, gamma)
             result_image_name = result_image_path.split("/")[-1]
             ftp_dir = FTP_ADJUST_IMAGE_PATH
+            ftp = connect_ftp(config_data)
             ftp.cwd(str(ftp_dir))
             save_dir = ftp_dir + "/" + result_image_name
             task_output = str({
@@ -846,7 +859,7 @@ class Preprocessing:
             # print(f"FTP error: {e}")
             return False
 
-    def equalize_hist(self, conn, id, task_param, ftp):
+    def equalize_hist(self, conn, id, task_param, ftp, config_data):
         input_file_arr = task_param['input_file']
         if len(input_file_arr) < 1:
             cursor = conn.cursor()
@@ -868,6 +881,7 @@ class Preprocessing:
             result_image_path = preprocess_image.hist_equalize(local_file_path, mode, tileGridSize)
             result_image_name = result_image_path.split("/")[-1]
             ftp_dir = FTP_EQUALIZE_IMAGE_PATH
+            ftp = connect_ftp(config_data)
             ftp.cwd(str(ftp_dir))
             save_dir = ftp_dir + "/" + result_image_name
             task_output = str({
@@ -894,7 +908,7 @@ class Preprocessing:
             # print(f"FTP error: {e}")
             return False
 
-    def illumination_correct(self, conn, id, task_param, ftp):
+    def illumination_correct(self, conn, id, task_param, ftp, config_data):
         input_file_arr = task_param['input_file']
         if len(input_file_arr) < 1:
             cursor = conn.cursor()
@@ -929,6 +943,7 @@ class Preprocessing:
             preprocess_image.illumination_correct(local_file_path, output_path)
             result_image_name = output_path.split("/")[-1]
             ftp_dir = FTP_ILLUM_CORRECT_IMAGE_PATH
+            ftp = connect_ftp(config_data)
             ftp.cwd(str(ftp_dir))
             save_dir = ftp_dir + "/" + result_image_name
             task_output = str({
@@ -963,7 +978,7 @@ class Preprocessing:
             # print(f"FTP error: {e}")
             return False
 
-    def physical_error_correction(self, conn, id, task_param, ftp):
+    def physical_error_correction(self, conn, id, task_param, ftp, config_data):
         input_file_arr = task_param['input_file']
         distortion_factor = float(task_param['distortion_factor'])
         try:
@@ -1011,6 +1026,7 @@ class Preprocessing:
             preprocess_image.physical_error_correction(local_file_path, output_path, distortion_factor, focal_matrix_size_x, focal_matrix_size_y, focal_length)
             result_image_name = output_path.split("/")[-1]
             ftp_dir = FTP_PHYSICAL_CORRECTION_IMAGE_PATH
+            ftp = connect_ftp(config_data)
             ftp.cwd(str(ftp_dir))
             save_dir = ftp_dir + "/" + result_image_name
             task_output = str({
@@ -1045,7 +1061,7 @@ class Preprocessing:
             # print(f"FTP error: {e}")
             return False
 
-    def radiometric_correction(self, conn, id, task_param, ftp):
+    def radiometric_correction(self, conn, id, task_param, ftp, config_data):
         input_file_arr = task_param['input_file']
         if len(input_file_arr) < 1:
             cursor = conn.cursor()
@@ -1089,6 +1105,7 @@ class Preprocessing:
             preprocess_image.radiometric_correction(local_file_path, output_path, reference_images_local)
             result_image_name = output_path.split("/")[-1]
             ftp_dir = FTP_RADIOMETRIC_CORRECTION_IMAGE_PATH
+            ftp = connect_ftp(config_data)
             ftp.cwd(str(ftp_dir))
             save_dir = ftp_dir + "/" + result_image_name
             task_output = str({
@@ -1274,7 +1291,7 @@ class Preprocessing:
             # print(f"FTP error: {e}")
             return False
 
-    def dem_correction(self, conn, id, task_param, ftp):
+    def dem_correction(self, conn, id, task_param, ftp, config_data):
         input_file_arr = task_param['input_file']
         input_file_dem_arr = task_param['input_file_dem']
         # lat_angle = float(task_param['lat_angle'])
@@ -1333,6 +1350,7 @@ class Preprocessing:
             preprocess_image.dem_correction(local_file_path, local_file_path_dem, output_path)
             result_image_name = output_path.split("/")[-1]
             ftp_dir = FTP_DEM_CORRECTION_IMAGE_PATH
+            ftp = connect_ftp(config_data)
             ftp.cwd(str(ftp_dir))
             save_dir = ftp_dir + "/" + result_image_name
             task_output = str({
@@ -1368,7 +1386,7 @@ class Preprocessing:
             # print(f"FTP error: {e}")
             return False
 
-    def orthogonal_correct(self, conn, id, task_param, ftp):
+    def orthogonal_correct(self, conn, id, task_param, ftp, config_data):
         input_file_arr = task_param['input_file']
         crs_string = task_param['crs_string']
         if len(input_file_arr) < 1:
@@ -1404,6 +1422,7 @@ class Preprocessing:
             preprocess_image.orthogonal_correct(local_file_path, output_path, crs_string)
             result_image_name = output_path.split("/")[-1]
             ftp_dir = FTP_ORTHOGONAL_CORRECT_IMAGE_PATH
+            ftp = connect_ftp(config_data)
             ftp.cwd(str(ftp_dir))
             save_dir = ftp_dir + "/" + result_image_name
             task_output = str({
@@ -1439,7 +1458,7 @@ class Preprocessing:
             # print(f"FTP error: {e}")
             return False
 
-    def convert_to_8_bit(self, conn, id, task_param, ftp):
+    def convert_to_8_bit(self, conn, id, task_param, ftp, config_data):
         input_file_arr = task_param['input_file']
         if len(input_file_arr) < 1:
             cursor = conn.cursor()
@@ -1470,6 +1489,7 @@ class Preprocessing:
                 return True
             result_image_name = output_path.split("/")[-1]
             ftp_dir = FTP_CONVERT_8_BIT_IMAGE_PATH
+            ftp = connect_ftp(config_data)
             ftp.cwd(str(ftp_dir))
             save_dir = ftp_dir + "/" + result_image_name
             task_output = str({
@@ -1520,35 +1540,35 @@ class Preprocessing:
             return_flag = False
             ftp = connect_ftp(config_data)
             if algorithm == "ket_hop_kenh":
-                return_flag = preprocess.merge_channel(conn, id, task_param, ftp)
+                return_flag = preprocess.merge_channel(conn, id, task_param, ftp, config_data)
             elif algorithm == "kiem_tra_kenh_ir":
-                return_flag = preprocess.check_and_merge_ir(conn, id, task_param, ftp)
+                return_flag = preprocess.check_and_merge_ir(conn, id, task_param, ftp, config_data)
             elif algorithm == "lam_sac_net":
-                return_flag = preprocess.sharpen_image(conn, id, task_param, ftp)
+                return_flag = preprocess.sharpen_image(conn, id, task_param, ftp, config_data)
             elif algorithm == "dieu_chinh_anh":
-                return_flag = preprocess.adjust_gamma(conn, id, task_param, ftp)
+                return_flag = preprocess.adjust_gamma(conn, id, task_param, ftp, config_data)
             elif algorithm == "can_bang_anh":
-                return_flag = preprocess.equalize_hist(conn, id, task_param, ftp)
+                return_flag = preprocess.equalize_hist(conn, id, task_param, ftp, config_data)
             elif algorithm == "hieu_chinh_sang":
-                return_flag = preprocess.illumination_correct(conn, id, task_param, ftp)
+                return_flag = preprocess.illumination_correct(conn, id, task_param, ftp, config_data)
             elif algorithm == "ket_xuat_dinh_dang":
-                return_flag = preprocess.image_format_convert(conn, id, task_param, ftp)
+                return_flag = preprocess.image_format_convert(conn, id, task_param, ftp, config_data)
             elif algorithm == "nang_cao_chat_luong":
-                return_flag = preprocess.enhance_image(conn, id, task_param, ftp)
+                return_flag = preprocess.enhance_image(conn, id, task_param, ftp, config_data)
             elif algorithm == "hieu_chinh_sai_so":
-                return_flag = preprocess.physical_error_correction(conn, id, task_param, ftp)
+                return_flag = preprocess.physical_error_correction(conn, id, task_param, ftp, config_data)
             elif algorithm == "hieu_chinh_vo_tuyen":
-                return_flag = preprocess.radiometric_correction(conn, id, task_param, ftp)
+                return_flag = preprocess.radiometric_correction(conn, id, task_param, ftp, config_data)
             elif algorithm == "hieu_chinh_dia_ly":
                 return_flag = preprocess.geometric_correction(conn, id, task_param, ftp, config_data)
             elif algorithm == "hieu_chinh_diem_khong_che":
-                return_flag = preprocess.gcp_correction(conn, id, task_param, ftp,config_data)
+                return_flag = preprocess.gcp_correction(conn, id, task_param, ftp, config_data)
             elif algorithm == "hieu_chinh_do_cao":
-                return_flag = preprocess.dem_correction(conn, id, task_param, ftp)
+                return_flag = preprocess.dem_correction(conn, id, task_param, ftp, config_data)
             elif algorithm == "nan_truc_giao":
-                return_flag = preprocess.orthogonal_correct(conn, id, task_param, ftp)
+                return_flag = preprocess.orthogonal_correct(conn, id, task_param, ftp, config_data)
             elif algorithm == "chuyen_doi_8bit":
-                return_flag = preprocess.convert_to_8_bit(conn, id, task_param, ftp)
+                return_flag = preprocess.convert_to_8_bit(conn, id, task_param, ftp, config_data)
             cursor.close()
             if return_flag:
                 task_stat_value_holder['value'] = 1
