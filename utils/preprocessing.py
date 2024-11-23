@@ -8,8 +8,9 @@ import ast
 from datetime import datetime
 import threading
 import time
+import math
 import rasterio
-from rasterio.warp import calculate_default_transform, reproject, Resampling
+from rasterio.warp import calculate_default_transform, reproject, Resampling, transform_bounds
 
 ftp_directory = json.load(open("ftp_directory.json"))
 FTP_ENHANCE_IMAGE_PATH = ftp_directory['enhance_image_result_directory']
@@ -133,6 +134,65 @@ def get_time_string():
     current_datetime = (str(now.year) + "_" + str(now.month) + "_" + str(now.day) + "_"
                         + str(now.hour) + "_" + str(now.minute) + "_" + str(now.second))
     return current_datetime
+
+
+# Radiometric correction function
+def latlon_to_tile(lat, lon, zoom):
+    n = 2.0 ** zoom
+    x_tile = int((lon + 180.0) / 360.0 * n)
+    y_tile = int(
+        (
+                1.0
+                - math.log(math.tan(math.radians(lat)) + (1 / math.cos(math.radians(lat))))
+                / math.pi
+        )
+        / 2.0
+        * n
+    )
+    return x_tile, y_tile
+
+
+def get_tiles_from_extent(min_lon, min_lat, max_lon, max_lat, zoom):
+    x_min, y_max = latlon_to_tile(max_lat, min_lon, zoom)
+    x_max, y_min = latlon_to_tile(min_lat, max_lon, zoom)
+    tiles = []
+    for x in range(x_min, x_max + 1):
+        for y in range(
+                y_max, y_min + 1
+        ):
+            tiles.append((x, y))
+    return tiles
+
+
+def get_tile_path(file_path, zoom_level):
+    with rasterio.open(file_path) as src:
+        bounds = src.bounds
+        crs = src.crs
+        bounds_4326 = transform_bounds(crs, "EPSG:4326", bounds.left, bounds.bottom, bounds.right, bounds.top)
+        min_lon, min_lat, max_lon, max_lat = bounds_4326
+    tiles = get_tiles_from_extent(min_lon, min_lat, max_lon, max_lat, zoom_level)
+    tile_paths = [f"/tiles/google-satellite/{zoom_level}/{tile[0]}/{tile[1]}.png" for tile in tiles]
+    return tile_paths
+
+
+def check_tile_paths_on_ftp(ftp, tile_paths):
+    for path in tile_paths:
+        try:
+            ftp.cwd('/'.join(path.split('/')[:-1]))
+            if path.split('/')[-1] not in ftp.nlst():
+                return False
+        except ftplib.error_perm:
+            return False
+    return True
+
+
+def find_existing_tiles(file_path, ftp, start_zoom=14):
+    for zoom_level in range(start_zoom, 0, -1):
+        tile_paths = get_tile_path(file_path, zoom_level)
+        if check_tile_paths_on_ftp(ftp, tile_paths):
+            return tile_paths, zoom_level
+    return None, None
+# ends of Radiometric correction function
 
 
 class Preprocessing:
@@ -1072,8 +1132,19 @@ class Preprocessing:
             conn.commit()
             return False
         input_file = input_file_arr[0]
-        reference_images = task_param['reference_images_paths']
         try:
+            filename = input_file.split("/")[-1]
+            local_file_path = os.path.join(LOCAL_SRC_RADIOMETRIC_CORRECTION_IMAGE_PATH, filename)
+            if not os.path.isfile(local_file_path):
+                download_file(ftp, input_file, local_file_path)
+            ftp = connect_ftp(config_data)
+            reference_images, zoom_level = find_existing_tiles(local_file_path, ftp, start_zoom=14)
+            if not reference_images:
+                cursor = conn.cursor()
+                route_to_db(cursor)
+                cursor.execute("UPDATE avt_task SET task_stat = 0, task_message = 'Không có ảnh tham chiếu' WHERE id = %s", (id,))
+                conn.commit()
+                return False
             reference_images_local = []
             for reference_image in reference_images:
                 reference_image_name = reference_image.replace("/", "_")[1:]
@@ -1082,10 +1153,6 @@ class Preprocessing:
                 reference_images_local.append(local_reference_image_path)
                 if not os.path.isfile(local_reference_image_path):
                     download_file(ftp, reference_image, local_reference_image_path)
-            filename = input_file.split("/")[-1]
-            local_file_path = os.path.join(LOCAL_SRC_RADIOMETRIC_CORRECTION_IMAGE_PATH, filename)
-            if not os.path.isfile(local_file_path):
-                download_file(ftp, input_file, local_file_path)
             # epsg_code = check_epsg_code(local_file_path)
             # if epsg_code == 0:
             #     cursor = conn.cursor()
