@@ -7,17 +7,17 @@ cd avt_preprocess
 ```bash
 {
     "database": {
-        "host": "118.70.57.250",
+        "host": "118.70.x.x",
         "database": "avt",
         "user": "postgres",
-        "password": "pjlj603Pv0i7hDVz6UZWqTMyO",
+        "password": "xxxx",
         "port": 18944
     },
     "ftp": {
-        "host": "118.70.57.250",
+        "host": "118.70.x.x",
         "port": 18921,
         "user": "avt",
-        "password": "Pl0d9RQYUJCxZPGw6NJUcb8eJ6ZXdNMw"
+        "password": "x"
     },
     "modules": {
         "1":  "modules01_correctionmain",
